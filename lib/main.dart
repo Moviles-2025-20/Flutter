@@ -1,4 +1,3 @@
-import 'package:app_flutter/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'pages/notification.dart';
 import 'pages/home.dart';
@@ -28,7 +27,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const Carga(),
         '/inicio': (context) => const Inicio(),
         '/inicio/login': (context) => const Login(),
-        '/home': (context) => const Home(),
+        '/home': (context) => const MainPage(),
       },
     );
   }

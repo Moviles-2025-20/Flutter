@@ -18,7 +18,7 @@ class Home extends StatelessWidget {
             // Header Component
             CustomHeader(
               userName: 'Juliana',
-              profileImagePath: 'assets/profile.jpg',
+              profileImagePath: 'assets/images/profileimg.png',
               onNotificationTap: () {
                 // Handle notification tap
                 print('Notification tapped');
