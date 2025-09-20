@@ -39,7 +39,7 @@ class NotificationsPage extends StatelessWidget {
                 ),
                 NotificationCard(
                   image:
-                      "https://picsum.photos/200/100", // placeholder image
+                      "https://picsum.photos/200/100", 
                   text:
                       "An event that you may like was added near you! Check it out.",
                 ),
