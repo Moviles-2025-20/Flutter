@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pages/profile.dart';
+import 'pages/carga.dart';
+import 'pages/inicio.dart';
+import 'pages/login.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,8 +14,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Parchandes',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
       debugShowCheckedModeBanner: false,
-      home: const MainPage(),
+      home: const MainPage(), // 👈 Usamos home, quitamos initialRoute
     );
   }
 }
@@ -28,7 +35,10 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    ProfilePage(),
+    Inicio(),        // 👈 Home
+    Carga(),         // 👈 Ejemplo de otra vista
+    Login(),         // 👈 Otra página
+    ProfilePage(),   // 👈 Perfil
   ];
 
   void _onItemTapped(int index) {
