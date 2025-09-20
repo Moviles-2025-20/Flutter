@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/home.dart';
 import 'package:flutter/material.dart';
 
 import 'pages/carga.dart';
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const Carga(),
         '/inicio': (context) => const Inicio(),
         '/inicio/login': (context) => const Login(),
+        '/home': (context) => const Home(),
       },
     );
   }
