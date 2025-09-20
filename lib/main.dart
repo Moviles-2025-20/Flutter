@@ -47,7 +47,7 @@ class _MainPageState extends State<MainPage> {
     Home(),
     NotificationsPage(),
     DetailEvent(),
-    ProfilePage(), 
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -67,8 +67,8 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF3C5BA9),
-        currentIndex: _selectedIndex, 
-        onTap: _onItemTapped,          
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
