@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/listEvents.dart';
 import 'package:flutter/material.dart';
 import 'pages/notification.dart';
 import 'pages/home.dart';
@@ -45,7 +46,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = const [
     Home(),
-    NotificationsPage(),
+    ListEvents(),
     DetailEvent(),
     ProfilePage(),
   ];
