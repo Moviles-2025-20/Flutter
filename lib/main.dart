@@ -3,6 +3,9 @@ import 'pages/notification.dart';
 import 'pages/home.dart';
 import 'pages/detailEvent.dart';
 import 'pages/profile.dart';
+import 'pages/carga.dart';
+import 'pages/inicio.dart';
+import 'pages/login.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,8 +17,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Parchandes',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
       debugShowCheckedModeBanner: false,
-      home: const MainPage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const Carga(),
+        '/inicio': (context) => const Inicio(),
+        '/inicio/login': (context) => const Login(),
+        '/home': (context) => const Home(),
+      },
     );
   }
 }
@@ -34,7 +47,7 @@ class _MainPageState extends State<MainPage> {
     HomePage(),
     NotificationsPage(),
     DetailEvent(),
-    ProfilePage(),
+    ProfilePage(), 
   ];
 
   void _onItemTapped(int index) {
