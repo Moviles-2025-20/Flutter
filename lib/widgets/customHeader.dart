@@ -18,13 +18,13 @@ class CustomHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue[400]!, Colors.blue[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Color(0xFF6389E2),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
       ),
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(10),
       child: Column(
         children: [
           // Profile and notification row
@@ -62,7 +62,7 @@ class _ProfileSection extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          radius: 25,
+          radius: 35,
           backgroundImage: AssetImage(profileImagePath),
           backgroundColor: Colors.white,
         ),
@@ -81,7 +81,7 @@ class _ProfileSection extends StatelessWidget {
               'Hi, $userName!',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -100,11 +100,13 @@ class _NotificationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: (){
+        Navigator.pushNamed(context, '/notifications');
+      },
       child: Icon(
         Icons.notifications_outlined,
         color: Colors.white,
-        size: 24,
+        size: 35,
       ),
     );
   }
@@ -133,7 +135,7 @@ class _SearchBar extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Search...',
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[600]),
+                hintStyle: TextStyle(color: Colors.grey[500]),
               ),
             ),
           ),

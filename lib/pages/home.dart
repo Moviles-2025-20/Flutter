@@ -1,5 +1,6 @@
 import 'package:app_flutter/widgets/customHeader.dart';
-import 'package:app_flutter/widgets/homeSectionsCard.dart';
+import 'package:app_flutter/widgets/home_sections_card.dart';
+import 'package:app_flutter/widgets/recommendation_card.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
@@ -8,7 +9,7 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFFEFAED),
       body: SafeArea(
         child: Column(
           children: [
@@ -49,10 +50,10 @@ class Home extends StatelessWidget {
                     RecommendationCard(
                       title: 'Festival en el Chorro',
                       description: 'Déjate llevar por la energía de la música en vivo y disfruta una noche única en el Chorro.',
-                      imagePath: 'assets/festival.jpg',
+                      imagePath: 'assets/images/chorro_quevedo.png',
                       time: 'Today • 6:00 pm',
                       duration: '12 min',
-                      tagColor: Colors.blue[400]!,
+                      tagColor: Color(0xFF6389E2),
                       onTap: () {
                         print('Festival card tapped');
                       },
@@ -66,11 +67,11 @@ class Home extends StatelessWidget {
                     
                     RecommendationCard(
                       title: 'Obra de teatro',
-                      description: 'Vive la magia del teatro con una obra que te',
-                      imagePath: 'assets/teatro.jpg',
+                      description: 'Vive la magia del teatro con una obra que te atrapará desde el primer acto.',
+                      imagePath: 'assets/images/teatro.jpg',
                       location: 'El bobo',
                       time: 'Tomorrow',
-                      tagColor: Colors.orange[400]!,
+                      tagColor: Color(0xFFE9A55B),
                       showLocationInfo: true,
                       onTap: () {
                         print('Teatro card tapped');
@@ -100,7 +101,7 @@ class _SectionTitle extends StatelessWidget {
       style: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.grey[800],
+        color: Colors.black,
       ),
     );
   }
