@@ -1,3 +1,4 @@
+
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
 import 'package:app_flutter/widgets/recommendation_card.dart';
@@ -9,6 +10,7 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       backgroundColor: const Color(0xFFFEFAED),
       body: SafeArea(
         child: Column(
@@ -106,3 +108,4 @@ class _SectionTitle extends StatelessWidget {
     );
   }
 }
+
