@@ -9,7 +9,7 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
         title: const Text(
-          "Profile",
+          "Profile",style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF3C5BA9),
@@ -26,12 +26,11 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Foto y datos
             Row(
               children: [
                 const CircleAvatar(
                   radius: 60,
-                  backgroundImage: AssetImage("assets/profileimg.png"), // pon tu imagen
+                  backgroundImage: AssetImage("assets/images/profileimg.png"), // pon tu imagen
                 ),
                 const SizedBox(width: 16),
                 Column(
