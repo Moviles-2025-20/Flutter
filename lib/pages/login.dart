@@ -95,7 +95,7 @@ class Login extends StatelessWidget {
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                Navigator.pop(context, '/home');
+                Navigator.pushNamed(context, '/home');
               },
               child: const Text("SKIP IT FOR NOW", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
             ),

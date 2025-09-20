@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'pages/notification.dart';
 import 'pages/home.dart';
