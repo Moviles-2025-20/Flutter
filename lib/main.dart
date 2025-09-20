@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'pages/notification.dart';
+import 'pages/home.dart';
+import 'pages/detailEvent.dart';
 import 'pages/profile.dart';
 import 'pages/carga.dart';
 import 'pages/inicio.dart';
@@ -19,7 +22,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       debugShowCheckedModeBanner: false,
-      home: const MainPage(), // 👈 Usamos home, quitamos initialRoute
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const Carga(),
+        '/inicio': (context) => const Inicio(),
+        '/inicio/login': (context) => const Login(),
+        '/home': (context) => const Home(),
+      },
     );
   }
 }
@@ -35,10 +44,10 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    Inicio(),        // 👈 Home
-    Carga(),         // 👈 Ejemplo de otra vista
-    Login(),         // 👈 Otra página
-    ProfilePage(),   // 👈 Perfil
+    HomePage(),
+    NotificationsPage(),
+    DetailEvent(),
+    ProfilePage(), 
   ];
 
   void _onItemTapped(int index) {
@@ -58,8 +67,8 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF3C5BA9),
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: _selectedIndex, 
+        onTap: _onItemTapped,          
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
