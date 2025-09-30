@@ -1,4 +1,4 @@
-package com.example.app_flutter
+package com.mobileclass.parchandes
 
 import io.flutter.embedding.android.FlutterActivity
 
