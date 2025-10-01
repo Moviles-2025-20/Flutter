@@ -2,6 +2,7 @@ import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_provider_factory.dart';
 
 class AuthService {
@@ -64,7 +65,15 @@ class AuthService {
       }
 
       if (isFacebookUser) {
-        await FacebookAuth.instance.logOut();
+        try {
+          await FacebookAuth.instance.logOut();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('fb_access_token');
+
+          print('Facebook logout exitoso');
+        } catch (e) {
+          print('Error logout Facebook: $e');
+        }
       }
 
       // AGREGAR DEMAS ------------------------------------------------------------------------
