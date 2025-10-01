@@ -1,10 +1,14 @@
+import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
@@ -119,19 +123,19 @@ class ProfilePage extends StatelessWidget {
               ),),
             ),
             const SizedBox(height: 10),
-            ElevatedButton.icon(
+            ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEA9892),
-                  minimumSize: const Size(double.infinity, 40)),
-              onPressed: () {},
-              icon: const Icon(Icons.send,
-                color: Colors.white, // aquí cambias el color
-                size: 30, ),
-              label: const Text("Log Out",style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),),
+                backgroundColor: const Color(0xFFED6275),
+                minimumSize: const Size(double.infinity, 40),
+              ),
+              onPressed: viewModel.isLoading ? null : () => viewModel.logout(),
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             ElevatedButton(

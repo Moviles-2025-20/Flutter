@@ -1,6 +1,7 @@
 import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService;
@@ -8,6 +9,7 @@ class AuthViewModel extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  bool _isFirstTimeUser = false;
 
   AuthViewModel({required AuthService authService})
       : _authService = authService {
@@ -19,20 +21,40 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
+  bool get isFirstTimeUser => _isFirstTimeUser;
 
   // Initialize auth state listener
   void _initAuthListener() {
-    _authService.authStateChanges.listen((firebaseUser) {
+    _authService.authStateChanges.listen((firebaseUser) async{
       if (firebaseUser != null) {
         final providerId = firebaseUser.providerData.isNotEmpty
             ? firebaseUser.providerData.first.providerId
             : 'unknown';
         _user = UserModel.fromFirebase(firebaseUser, providerId);
+        await _checkFirstTimeUser();
       } else {
         _user = null;
+        _isFirstTimeUser = false;
       }
+
       notifyListeners();
     });
+  }
+
+  //Check first time user
+  Future<void> _checkFirstTimeUser() async {
+    if (_user == null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'user_${_user!.uid}_has_logged_in';
+    
+    // Check if user has logged in before
+    _isFirstTimeUser = !prefs.containsKey(key);
+    
+    if (_isFirstTimeUser) {
+      // Mark user as having logged in
+      await prefs.setBool(key, true);
+    }
   }
 
   // Login methods
@@ -80,6 +102,17 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Manual method to mark user as returning (optional)
+  Future<void> markAsReturningUser() async {
+    if (_user == null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'user_${_user!.uid}_has_logged_in';
+    await prefs.setBool(key, true);
+    _isFirstTimeUser = false;
+    notifyListeners();
   }
 
   @override

@@ -71,18 +71,11 @@ class Start extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8), // esquinas redondeadas opcional
                     )
                   ),
-                  child: const Text("Log In", style: TextStyle(fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 255, 255, 255),)),
+                  child: const Text("Log In", style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20,
+                  color: Color.fromARGB(255, 255, 255, 255),)),
                 ),
                 const SizedBox(width: 20),
               ],
-            ),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/home');
-              },
-              child: const Text("SKIP IT FOR NOW", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
             ),
           ],
       ),
