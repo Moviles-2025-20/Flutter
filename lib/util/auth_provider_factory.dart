@@ -1,6 +1,8 @@
 import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 
 class AuthProviderFactory {
   // Factory method to create authentication credentials
@@ -12,6 +14,8 @@ class AuthProviderFactory {
         return await _createGoogleCredential();
       case AuthProviderType.github:
         return await _createGithubCredential();
+      case AuthProviderType.facebook:
+        return await _createFacebookCredential();
     }
   }
 
@@ -48,8 +52,39 @@ class AuthProviderFactory {
     return null;
   }
 
-  //Other Authentication
-
+  //facebook Authentication
+  //static Future<OAuthCredential?> _createFacebookCredential() async {
+    //final LoginResult result = await FacebookAuth.instance.login(permissions: ['email', 'public_profile']);
+    //if (result.status == LoginStatus.success) {
+      //final AccessToken accessToken = result.accessToken!;
+      //return FacebookAuthProvider.credential(accessToken.tokenString);
+    //} else {
+      //throw Exception('Facebook login cancelled or failed: ${result.message}');
+    //}
+  //}
+  static Future<OAuthCredential?> _createFacebookCredential() async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: ['public_profile'],
+      );
+      if (result.status == LoginStatus.success) {
+        final AccessToken? accessToken = result.accessToken;
+        if (accessToken == null) {
+          throw Exception('Facebook access token is null');
+        }
+        final credential = FacebookAuthProvider.credential(accessToken.tokenString);
+        return credential;
+      }
+      else {
+        throw Exception(
+            'Facebook login failed: ${result.status} - ${result.message}'
+        );
+      }
+    } catch (e) {
+      print('Error creating Google credential: $e');
+      rethrow;
+    }
+  }
 
 
   

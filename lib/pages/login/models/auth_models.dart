@@ -29,5 +29,6 @@ class UserModel {
 enum AuthProviderType {
   google,
   github,
+  facebook,
   //Other
 }

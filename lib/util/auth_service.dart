@@ -1,6 +1,7 @@
 import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'auth_provider_factory.dart';
 
 class AuthService {
@@ -19,6 +20,14 @@ class AuthService {
         }
         return await _auth.signInWithCredential(credential);
       }
+      if (type == AuthProviderType.facebook) {
+        final credential = await AuthProviderFactory.createCredential(type);
+        if (credential == null) {
+          throw Exception('Facebook sign-in cancelled');
+        }
+        return await _auth.signInWithCredential(credential);
+      }
+
 
       // AGREGAR DEMAS ------------------------------------------------------------------------
 
@@ -39,6 +48,13 @@ class AuthService {
         .any((info) => info.providerId == 'google.com') ?? false) {
       await GoogleSignIn().signOut();
     }
+    // Sign out from Facebook
+    if (_auth.currentUser?.providerData
+        .any((info) => info.providerId == 'facebook.com') ??
+        false) {
+      await FacebookAuth.instance.logOut();
+    }
+
 
     // AGREGAR DEMAS ------------------------------------------------------------------------
   }

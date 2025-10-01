@@ -2,6 +2,7 @@ import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService;
@@ -60,6 +61,16 @@ class AuthViewModel extends ChangeNotifier {
   // Login methods
   Future<void> loginWithGoogle() async {
     await _login(AuthProviderType.google);
+  }
+
+  Future<void> loginWithFacebook() async {
+    try {
+      await FacebookAuth.instance.logOut();
+      await _login(AuthProviderType.facebook);
+
+    } catch (e) {
+      print('Error en loginWithFacebook: $e');
+    }
   }
 
   //Agregar los que Faltan---------------------------------------------------------------------

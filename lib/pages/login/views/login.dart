@@ -104,14 +104,16 @@ class _LoginState extends State<Login> {
 
           const SizedBox(height: 16),
 
-          // Microsoft Login Button
+          // Facebook Login Button
           _buildLoginButton(
             context: context,
-            label: 'Login with Microsoft',
-            icon: Icons.business,
-            color: const Color.fromARGB(255, 243, 156, 18),
-            onPressed: viewModel.isLoading ? null : () {
-              // viewModel.loginWithMicrosoft()
+            label: 'Login with Facebook',
+            icon: Icons.facebook, // icono de Facebook
+            color: const Color(0xFF1877F2), // azul Facebook
+            onPressed: viewModel.isLoading
+                ? null
+                : () {
+              viewModel.loginWithFacebook();
             },
           ),
 
