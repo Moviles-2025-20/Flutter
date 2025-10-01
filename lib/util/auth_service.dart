@@ -20,6 +20,8 @@ class AuthService {
         }
         return await _auth.signInWithCredential(credential);
       }
+
+      //For Facebook
       if (type == AuthProviderType.facebook) {
         final credential = await AuthProviderFactory.createCredential(type);
         if (credential == null) {
@@ -42,21 +44,34 @@ class AuthService {
 
   // Logout
   Future<void> logout() async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      // Verificar proveedores
+      final isGoogleUser = user.providerData
+          .any((info) => info.providerId == 'google.com');
+      final isFacebookUser = user.providerData
+          .any((info) => info.providerId == 'facebook.com');
+
+      // Cerrar sesión de proveedores
+      if (isGoogleUser) {
+        try {
+          await GoogleSignIn().disconnect();
+        } catch (e) {
+          print('Error en disconnect, intentando signOut: $e');
+          await GoogleSignIn().signOut();
+        }
+      }
+
+      if (isFacebookUser) {
+        await FacebookAuth.instance.logOut();
+      }
+
+      // AGREGAR DEMAS ------------------------------------------------------------------------
+    }
+  
+
     await _auth.signOut();
-    // Sign out from Google
-    if (_auth.currentUser?.providerData
-        .any((info) => info.providerId == 'google.com') ?? false) {
-      await GoogleSignIn().signOut();
-    }
-    // Sign out from Facebook
-    if (_auth.currentUser?.providerData
-        .any((info) => info.providerId == 'facebook.com') ??
-        false) {
-      await FacebookAuth.instance.logOut();
-    }
-
-
-    // AGREGAR DEMAS ------------------------------------------------------------------------
   }
 
   // Get current user
