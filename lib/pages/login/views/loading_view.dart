@@ -1,16 +1,16 @@
-import 'package:app_flutter/pages/inicio.dart';
+import 'package:app_flutter/pages/login/views/start.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 
-class Carga extends StatefulWidget {
-  const Carga({super.key});
+class LoadingView extends StatefulWidget {
+  const LoadingView({super.key});
 
   @override
-  State<Carga> createState() => _CargaState();
+  State<LoadingView> createState() => _LoadingViewState();
 }
 
-class _CargaState extends State<Carga> {
+class _LoadingViewState extends State<LoadingView> {
   @override
   void initState() {
     super.initState();
@@ -19,7 +19,7 @@ class _CargaState extends State<Carga> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const Inicio()),
+          MaterialPageRoute(builder: (context) => const Start()),
         );
       }
     });
