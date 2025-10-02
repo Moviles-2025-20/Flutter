@@ -27,32 +27,12 @@ class Magic8BallCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF6389E2), Color(0xFF4A6FC9)],
-                ),
                 borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6389E2).withValues(alpha: 0.3),
-                    spreadRadius: 2,
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                
               ),
               child: Column(
                 children: [
-                  const Text(
-                    'Magic 8-Ball',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   _Magic8Ball(isLoading: viewModel.isLoading),
                 ],
               ),
@@ -116,14 +96,7 @@ class _Magic8Ball extends StatelessWidget {
                               strokeWidth: 3,
                             ),
                             SizedBox(height: 10),
-                            Text(
-                              'Searching...',
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            
                           ],
                         )
                       : const Text(

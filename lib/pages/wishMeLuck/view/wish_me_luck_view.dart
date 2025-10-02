@@ -68,10 +68,11 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
           'Wish Me Luck',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: Color.fromARGB(255, 255, 255, 255),
           ),
         ),
-        backgroundColor: Colors.white,
+        centerTitle: true,
+        backgroundColor: const Color(0xFF6389E2),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),

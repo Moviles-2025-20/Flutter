@@ -18,12 +18,12 @@ class WishMeLuckButton extends StatelessWidget {
       height: 60,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFED6275), Color(0xFFFF8A95)],
+          colors: [Color(0xFF6389E2), Color(0xFF6389E2)],
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFED6275).withValues(alpha: 0.4),
+            color: const Color(0xFF6389E2).withValues(alpha: 0.4),
             spreadRadius: 1,
             blurRadius: 15,
             offset: const Offset(0, 5),

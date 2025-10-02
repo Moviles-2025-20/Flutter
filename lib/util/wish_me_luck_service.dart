@@ -8,12 +8,22 @@ class WishMeLuckService {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+
+  //Lista para poblar la base de datos
+  List<Map<String, dynamic>> studentEvents = [
+  ];
+
   Future<WishMeLuckEvent> getWishMeLuckEvent() async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
         throw Exception('Usuario no autenticado');
       }
+
+      /*
+      print('Creando eventos...');
+      await addEvents(studentEvents);
+      */
 
       print('Buscando evento aleatorio...');
 
@@ -41,6 +51,20 @@ class WishMeLuckService {
     } catch (e) {
       print('Error en getWishMeLuckEvent: $e');
       throw Exception('Error al obtener evento: $e');
+    }
+  }
+
+  
+
+
+  Future<void> addEvents(List<Map<String, dynamic>> events) async {
+    try {
+      for (var event in events) {
+        await _firestore.collection('events').add(event);
+      }
+      print('Todos los eventos se añadieron correctamente!');
+    } catch (e) {
+      print('Error al añadir eventos: $e');
     }
   }
 }

@@ -24,14 +24,9 @@ class EmptyState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.auto_awesome,
-            size: 60,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           Text(
-            'Tap the button below',
+            'Shake or Tap the button below',
             style: TextStyle(
               color: Colors.grey[700],
               fontSize: 18,
@@ -41,7 +36,7 @@ class EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Let the magic 8-ball discover your perfect event!',
+            'And let the magic 8-ball discover your perfect event!',
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 15,

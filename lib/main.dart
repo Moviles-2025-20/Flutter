@@ -14,6 +14,7 @@ import 'pages/login/views/start.dart';
 import 'pages/login/views/login.dart';
 
 void main() async{
+  
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -23,6 +24,8 @@ void main() async{
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
+
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +56,10 @@ class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<MainPage> createState() => MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
@@ -72,36 +75,70 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  void selectTab(int index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
+  List<GlobalKey<NavigatorState>> get navigatorKeys => _navigatorKeys;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+  return Scaffold(
       appBar: AppBar(
         title: const Text("Demo Navigation"),
         centerTitle: true,
       ),
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF3C5BA9),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          Navigator(
+            key: _navigatorKeys[0],
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (_) => Home(), // tu pantalla principal
+              );
+            },
+          ),
+          Navigator(
+            key: _navigatorKeys[1],
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (_) => ListEvents(),
+              );
+            },
+          ),
+          Navigator(
+            key: _navigatorKeys[2],
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (_) => WishMeLuckView(),
+              );
+            },
+          ),
+          Navigator(
+            key: _navigatorKeys[3],
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (_) => ProfilePage(),
+              );
+            },
+          ),
+        ],
+      ),
+        bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Color(0xFF6389E2),
+        unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            label: "",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            label: "",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.event_outlined), activeIcon: Icon(Icons.event), label: "Events"),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome_outlined), activeIcon: Icon(Icons.auto_awesome), label: "Wish Luck"),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );

@@ -19,15 +19,10 @@ class MotivationalMessage extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFFFF3E0),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFB74D), width: 2),
+          border: Border.all(color: const Color(0xFFE9A55B), width: 2),
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.auto_awesome,
-              color: Color(0xFFFF9800),
-              size: 28,
-            ),
             const SizedBox(width: 15),
             Expanded(
               child: Text(
