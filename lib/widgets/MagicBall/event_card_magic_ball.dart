@@ -1,67 +1,54 @@
 
 import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
-import 'package:app_flutter/widgets/MagicBall/component_detail.dart';
 import 'package:flutter/material.dart';
 
-class MotivationalMessageCard extends StatelessWidget {
+class MotivationalMessage extends StatelessWidget {
   final WishMeLuckViewModel viewModel;
 
-  const MotivationalMessageCard({
-    Key? key,
-    required this.viewModel,
-  }) : super(key: key);
+  const MotivationalMessage({Key? key, required this.viewModel}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB74D), width: 2),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.auto_awesome,
-            color: Color(0xFFFF9800),
-            size: 28,
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Text(
-              viewModel.getMotivationalMessage(),
-              style: const TextStyle(
-                color: Color(0xFFE65100),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 500),
+      opacity: 1.0,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFB74D), width: 2),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              color: Color(0xFFFF9800),
+              size: 28,
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Text(
+                viewModel.getMotivationalMessage(),
+                style: const TextStyle(
+                  color: Color(0xFFE65100),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
-
-// ============================================
-// EVENT DETAILS CARD WIDGET
-// ============================================
-class EventDetailsCard extends StatelessWidget {
+class EventPreviewCard extends StatelessWidget {
   final WishMeLuckEvent event;
 
-  const EventDetailsCard({
-    Key? key,
-    required this.event,
-  }) : super(key: key);
-
-  Color _getColorForEvent(WishMeLuckEvent event) {
-    if (event.isPositive) return const Color(0xFF4CAF50);
-    if (event.isNegative) return const Color(0xFFED6275);
-    return const Color(0xFFFFA726);
-  }
+  const EventPreviewCard({Key? key, required this.event}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -81,25 +68,98 @@ class EventDetailsCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              EventTypeChips(
-                eventTypes: event.eventType,
-                color: _getColorForEvent(event),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            if (event.imageUrl.isNotEmpty && event.imageUrl != 'TEST')
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                child: Image.network(
+                  event.imageUrl,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF6389E2),
+                            const Color(0xFF6389E2).withValues(alpha: 0.7),
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.event, size: 60, color: Colors.white),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF6389E2),
+                      const Color(0xFF6389E2).withValues(alpha: 0.7),
+                    ],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(Icons.event, size: 60, color: Colors.white),
+                ),
               ),
-              const SizedBox(height: 15),
-              EventTitle(title: event.name),
-              const SizedBox(height: 10),
-              EventDescription(description: event.description),
-              const SizedBox(height: 20),
-              EventInfoSection(event: event),
-              const SizedBox(height: 20),
-              //EventStatsSection(stats: event.stats),
-            ],
-          ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Description
+                  Text(
+                    event.description,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 16,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

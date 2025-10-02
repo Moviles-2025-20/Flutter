@@ -1,14 +1,14 @@
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
 import 'package:app_flutter/widgets/MagicBall/button_wish_me_luck.dart';
-import 'package:app_flutter/widgets/MagicBall/component_detail.dart';
 import 'package:app_flutter/widgets/MagicBall/event_card_magic_ball.dart';
+import 'package:app_flutter/widgets/MagicBall/events_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class WishMeLuckView extends StatelessWidget {
-  const WishMeLuckView({super.key});
+  const WishMeLuckView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class WishMeLuckView extends StatelessWidget {
 }
 
 class _WishMeLuckContent extends StatefulWidget {
-  const _WishMeLuckContent();
+  const _WishMeLuckContent({Key? key}) : super(key: key);
 
   @override
   State<_WishMeLuckContent> createState() => _WishMeLuckContentState();
@@ -92,14 +92,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                 const SizedBox(height: 25),
 
                 if (viewModel.currentEvent != null)
-                  MotivationalMessageCard(viewModel: viewModel),
+                  MotivationalMessage(viewModel: viewModel),
 
                 if (viewModel.currentEvent != null) const SizedBox(height: 20),
 
                 if (viewModel.currentEvent != null)
-                  EventDetailsCard(event: viewModel.currentEvent!)
+                  EventPreviewCard(event: viewModel.currentEvent!)
                 else
-                  const EmptyStateCard(),
+                  const EmptyState(),
 
                 const SizedBox(height: 25),
 

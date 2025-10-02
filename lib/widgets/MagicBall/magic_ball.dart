@@ -1,7 +1,4 @@
-
-import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
-import 'package:app_flutter/widgets/MagicBall/events_magic_ball.dart';
 import 'package:flutter/material.dart';
 
 class Magic8BallCard extends StatelessWidget {
@@ -13,13 +10,6 @@ class Magic8BallCard extends StatelessWidget {
     required this.viewModel,
     required this.shakeAnimation,
   }) : super(key: key);
-
-  Color _getColorForEvent(WishMeLuckEvent? event) {
-    if (event == null) return const Color(0xFF6389E2);
-    if (event.isPositive) return const Color(0xFF4CAF50);
-    if (event.isNegative) return const Color(0xFFED6275);
-    return const Color(0xFFFFA726);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,44 +25,36 @@ class Magic8BallCard extends StatelessWidget {
             angle: shake * 0.3 * (shake < 0.5 ? 1 : -1),
             child: Container(
               width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 200),
+              padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    _getColorForEvent(viewModel.currentEvent),
-                    _getColorForEvent(viewModel.currentEvent)
-                        .withValues(alpha: 0.7),
-                  ],
+                  colors: [Color(0xFF6389E2), Color(0xFF4A6FC9)],
                 ),
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
                   BoxShadow(
-                    color: _getColorForEvent(viewModel.currentEvent)
-                        .withValues(alpha: 0.3),
+                    color: const Color(0xFF6389E2).withValues(alpha: 0.3),
                     spreadRadius: 2,
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Magic 8-Ball',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Magic 8-Ball',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 20),
-                    Magic8Ball(viewModel: viewModel),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                  _Magic8Ball(isLoading: viewModel.isLoading),
+                ],
               ),
             ),
           ),
@@ -83,25 +65,22 @@ class Magic8BallCard extends StatelessWidget {
 }
 
 
-class Magic8Ball extends StatelessWidget {
-  final WishMeLuckViewModel viewModel;
+class _Magic8Ball extends StatelessWidget {
+  final bool isLoading;
 
-  const Magic8Ball({
-    Key? key,
-    required this.viewModel,
-  }) : super(key: key);
+  const _Magic8Ball({Key? key, required this.isLoading}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
-      tween: Tween(begin: 1.0, end: viewModel.isLoading ? 0.95 : 1.0),
+      tween: Tween(begin: 1.0, end: isLoading ? 0.95 : 1.0),
       builder: (context, scale, child) {
         return Transform.scale(
           scale: scale,
           child: Container(
-            width: 280,
-            height: 280,
+            width: 200,
+            height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.black.withValues(alpha: 0.9),
@@ -115,8 +94,8 @@ class Magic8Ball extends StatelessWidget {
             ),
             child: Center(
               child: Container(
-                width: 200,
-                height: 200,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -127,8 +106,34 @@ class Magic8Ball extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: ClipOval(
-                  child: BallContent(viewModel: viewModel),
+                child: Center(
+                  child: isLoading
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              color: Color(0xFF6389E2),
+                              strokeWidth: 3,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Searching...',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const Text(
+                          '8',
+                          style: TextStyle(
+                            fontSize: 80,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -139,37 +144,6 @@ class Magic8Ball extends StatelessWidget {
   }
 }
 
-
-class BallContent extends StatelessWidget {
-  final WishMeLuckViewModel viewModel;
-
-  const BallContent({
-    Key? key,
-    required this.viewModel,
-  }) : super(key: key);
-
-  Color _getColorForEvent(WishMeLuckEvent event) {
-    if (event.isPositive) return const Color(0xFF4CAF50);
-    if (event.isNegative) return const Color(0xFFED6275);
-    return const Color(0xFFFFA726);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (viewModel.isLoading) {
-      return const LoadingState();
-    }
-
-    if (viewModel.currentEvent != null) {
-      return EventPreview(
-        event: viewModel.currentEvent!,
-        color: _getColorForEvent(viewModel.currentEvent!),
-      );
-    }
-
-    return const DefaultState();
-  }
-}
 
 
 class LoadingState extends StatelessWidget {
@@ -200,35 +174,6 @@ class LoadingState extends StatelessWidget {
   }
 }
 
-
-class EventPreview extends StatelessWidget {
-  final WishMeLuckEvent event;
-  final Color color;
-
-  const EventPreview({
-    Key? key,
-    required this.event,
-    required this.color,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          EventImage(event: event, color: color),
-          const SizedBox(height: 12),
-          EventName(name: event.name),
-          const SizedBox(height: 8),
-          if (event.eventType.isNotEmpty)
-            EventTypeChip(type: event.eventType.first, color: color),
-        ],
-      ),
-    );
-  }
-}
 
 
 class DefaultState extends StatelessWidget {
