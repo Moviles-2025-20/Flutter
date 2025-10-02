@@ -1,5 +1,6 @@
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 class RegisterViewModel extends ChangeNotifier {
@@ -13,7 +14,6 @@ class RegisterViewModel extends ChangeNotifier {
   List<Map<String, String>> freeTimeSlots = []; // [{start, end}]
   List<String> favoriteCategories = [];
 
-  //  Métodos para manejar categorías
   void toggleCategory(String category) {
     if (favoriteCategories.contains(category)) {
       favoriteCategories.remove(category);
@@ -39,7 +39,9 @@ class RegisterViewModel extends ChangeNotifier {
     }
   }
 
+
   Future<void> saveUserData(String uid) async {
+    final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
     if (name == null ||
         email == null ||
         major == null ||
@@ -47,13 +49,16 @@ class RegisterViewModel extends ChangeNotifier {
         birthDate == null ||
         favoriteCategories.isEmpty ||
         freeTimeSlots.isEmpty) {
-      throw Exception("Debes completar todos los campos");
+      throw Exception("You must completed all fields");
     }
+
+
 
     await _db.collection("users").doc(uid).set({
       "profile": {
         "name": name,
         "email": email,
+        "photo": photoUrl,   // <-- foto de Auth
         "major": major,
         "gender": gender,
         "age": DateTime.now().year - birthDate!.year,
@@ -69,5 +74,7 @@ class RegisterViewModel extends ChangeNotifier {
     }, SetOptions(merge: true));
   }
 }
+
+
 
 

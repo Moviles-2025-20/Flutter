@@ -2,13 +2,14 @@ import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/listEvents.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
+import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/home/home.dart';
 import 'pages/detailEvent.dart';
-import 'pages/profile.dart';
+import 'pages/profile/views/profile.dart';
 import 'pages/login/views/loading_view.dart';
 import 'pages/login/views/start.dart';
 import 'pages/login/views/login.dart';
@@ -28,40 +29,43 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => AuthViewModel(
-        authService: AuthService(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthViewModel(authService: AuthService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfileViewModel(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Parchandes',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        ),
+        debugShowCheckedModeBanner: false,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoadingView(),
+          '/start': (context) => const Start(),
+          '/start/login': (context) => const Login(),
+          '/home': (context) => const MainPage(),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/register') {
+            final uid = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider(
+                create: (_) => RegisterViewModel(),
+                child: RegisterView(uid: uid),
+              ),
+            );
+          }
+          return null;
+        },
       ),
-        child:MaterialApp(
-          title: 'Parchandes',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          ),
-          debugShowCheckedModeBanner: false,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const LoadingView(),
-            '/start': (context) => const Start(),
-            '/start/login': (context) => const Login(),
-            '/home': (context) => const MainPage(),}
-            ,
-          onGenerateRoute: (settings) {
-            if (settings.name == '/register') {
-              final uid = settings.arguments as String;
-              return MaterialPageRoute(
-                builder: (context) => ChangeNotifierProvider(
-                  // ⬅️ ENVUELVE CON PROVIDER AQUÍ
-                  create: (_) => RegisterViewModel(),
-                  child: RegisterView(uid: uid),
-                ),
-              );
-            }
-            return null;
-          },
-
-        )
     );
-  } 
+  }
 }
 
 class MainPage extends StatefulWidget {

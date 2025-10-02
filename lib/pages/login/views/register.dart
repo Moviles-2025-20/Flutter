@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/register_viewmodel.dart';
@@ -12,77 +13,115 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
+  // Controllers para campos que pueden venir de Auth
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+
 
   final List<String> categories = [
-    "Música",
-    "Deportes",
-    "Tecnología",
-    "Cine",
-    "Lectura",
-    "Viajes",
-    "Comida"
+    "Music",
+    "Sport",
+    "Academic",
+    "Technology",
+    "Movies",
+    "Literature",
+    "Know the world",
+    "Food"
   ];
 
   final List<String> days = [
-    "Lunes",
-    "Martes",
-    "Miércoles",
-    "Jueves",
-    "Viernes",
-    "Sábado",
-    "Domingo",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
   ];
 
   String? _selectedDay;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
+  User? firebaseUser;
+
+
+  @override
+  void initState() {
+    super.initState();
+    firebaseUser = FirebaseAuth.instance.currentUser;
+
+    _nameController = TextEditingController(text: firebaseUser?.displayName ?? '');
+    _emailController = TextEditingController(text: firebaseUser?.email ?? '');
+
+    // Inicializar el ViewModel
+    final viewModel = Provider.of<RegisterViewModel>(context, listen: false);
+    viewModel.name = firebaseUser?.displayName ?? '';
+    viewModel.email = firebaseUser?.email ?? '';
+  }
+
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<RegisterViewModel>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Registro")),
-      body: Padding(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF3b5998), // Azul estilo Facebook
+        title: const Text("Register", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+      ),
+      body: Container(
+        color: const Color(0xFFFFF8E1),
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              /// Nombre
               TextFormField(
-                decoration: const InputDecoration(labelText: "Nombre"),
+                controller: _nameController,
+                decoration: _inputDecoration("Name"),
                 onChanged: (v) => viewModel.name = v,
-                validator: (v) => v!.isEmpty ? "Campo obligatorio" : null,
+                validator: (v) => v!.isEmpty ? "Mandatory field" : null,
               ),
-
-              /// Ciudad
+              const SizedBox(height: 12),
+              // Email
               TextFormField(
-                decoration: const InputDecoration(labelText: "Email"),
+                controller: _emailController,
+                decoration: _inputDecoration("Email"),
                 onChanged: (v) => viewModel.email = v,
-                validator: (v) => v!.isEmpty ? "Campo obligatorio" : null,
+                validator: (v) => v!.isEmpty ? "Mandatory field" : null,
               ),
-
-              /// major
+              const SizedBox(height: 12),
               TextFormField(
-                decoration: const InputDecoration(labelText: "Major"),
+                decoration: _inputDecoration("Major"),
                 onChanged: (v) => viewModel.major = v,
-                validator: (v) => v!.isEmpty ? "Campo obligatorio" : null,
+                validator: (v) => v!.isEmpty ? "Mandatory field" : null,
               ),
+              const SizedBox(height: 12),
 
-              /// Género
               DropdownButtonFormField<String>(
                 value: viewModel.gender,
-                items: ["Masculino", "Femenino", "Otro"]
+                items: ["Male", "Female", "Other"]
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                     .toList(),
                 onChanged: (v) => viewModel.gender = v,
-                decoration: const InputDecoration(labelText: "Género"),
-                validator: (v) => v == null ? "Campo obligatorio" : null,
+                decoration: _inputDecoration("Gender"),
+                validator: (v) => v == null ? "Mandatory field" : null,
               ),
+
+              const SizedBox(height: 16),
 
               /// Fecha de nacimiento
               ElevatedButton(
+                style: _blueButtonStyle(),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -97,39 +136,42 @@ class _RegisterViewState extends State<RegisterView> {
                   }
                 },
                 child: Text(viewModel.birthDate == null
-                    ? "Seleccionar fecha de nacimiento"
+                    ? "Choose Birth Date"
                     : viewModel.birthDate.toString().split(" ")[0]),
               ),
 
               const SizedBox(height: 20),
 
-              /// Categorías favoritas
-              const Text("Categorías favoritas",
+              /// Likes como chips naranjas
+              const Text("Preferences",
                   style: TextStyle(fontWeight: FontWeight.bold)),
-              ...categories.map((cat) {
-                final selected = viewModel.favoriteCategories.contains(cat);
-                return CheckboxListTile(
-                  title: Text(cat),
-                  value: selected,
-                  onChanged: (_) {
-                    setState(() {
-                      viewModel.toggleCategory(cat);
-                    });
-                  },
-                );
-              }),
+              Wrap(
+                spacing: 8,
+                children: categories.map((cat) {
+                  final selected =
+                  viewModel.favoriteCategories.contains(cat);
+                  return ChoiceChip(
+                    label: Text(cat),
+                    selected: selected,
+                    selectedColor: Colors.orange,
+                    onSelected: (_) {
+                      setState(() {
+                        viewModel.toggleCategory(cat);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
 
               const Divider(height: 40),
 
-              /// Horarios disponibles
-              const Text("Horarios disponibles",
+              /// Free time slots
+              const Text("Free time slots",
                   style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
 
               DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: "Día disponible",
-                  border: OutlineInputBorder(),
-                ),
+                decoration: _inputDecoration("Free day"),
                 value: _selectedDay,
                 items: days
                     .map((day) =>
@@ -143,6 +185,7 @@ class _RegisterViewState extends State<RegisterView> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
+                      style: _blueButtonStyle(),
                       onPressed: () async {
                         final time = await showTimePicker(
                           context: context,
@@ -151,13 +194,14 @@ class _RegisterViewState extends State<RegisterView> {
                         if (time != null) setState(() => _startTime = time);
                       },
                       child: Text(_startTime == null
-                          ? "Hora inicio"
-                          : "Inicio: ${_startTime!.format(context)}"),
+                          ? "Start"
+                          : "Start: ${_startTime!.format(context)}"),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
+                      style: _blueButtonStyle(),
                       onPressed: () async {
                         final time = await showTimePicker(
                           context: context,
@@ -166,8 +210,8 @@ class _RegisterViewState extends State<RegisterView> {
                         if (time != null) setState(() => _endTime = time);
                       },
                       child: Text(_endTime == null
-                          ? "Hora fin"
-                          : "Fin: ${_endTime!.format(context)}"),
+                          ? "End"
+                          : "End: ${_endTime!.format(context)}"),
                     ),
                   ),
                 ],
@@ -176,6 +220,7 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 16),
 
               ElevatedButton.icon(
+                style: _blueButtonStyle(),
                 onPressed: () {
                   if (_selectedDay != null &&
                       _startTime != null &&
@@ -192,24 +237,23 @@ class _RegisterViewState extends State<RegisterView> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text("Selecciona día, hora inicio y hora fin")),
+                          content:
+                          Text("Select day, start time, and end time")),
                     );
                   }
                 },
                 icon: const Icon(Icons.add),
-                label: const Text("Agregar horario"),
+                label: const Text("Add free time slot"),
               ),
 
-              const SizedBox(height: 16),
-
               if (viewModel.freeTimeSlots.isNotEmpty) ...[
-                const Text("Horarios agregados:"),
+                const Text("Added Free Time Slots:"),
                 ...viewModel.freeTimeSlots.asMap().entries.map((entry) {
                   final i = entry.key;
                   final slot = entry.value;
                   return ListTile(
                     leading: const Icon(Icons.schedule),
-                    title: Text("${slot['day']} - ${slot['start']} a ${slot['end']}"),
+                    title: Text("${slot['day']} - ${slot['start']} to ${slot['end']}"),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
@@ -222,10 +266,12 @@ class _RegisterViewState extends State<RegisterView> {
                 }),
               ],
 
+
               const SizedBox(height: 30),
 
-              /// Botón Guardar
+              /// Botones estilo perfil
               ElevatedButton(
+                style: _pinkButtonStyle(),
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     try {
@@ -233,7 +279,7 @@ class _RegisterViewState extends State<RegisterView> {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text("Datos guardados exitosamente")),
+                            content: Text("Data saved successfully")),
                       );
                       Navigator.pushReplacementNamed(context, '/home');
                     } catch (e) {
@@ -243,7 +289,7 @@ class _RegisterViewState extends State<RegisterView> {
                     }
                   }
                 },
-                child: const Text("Guardar"),
+                child: const Text("Save"),
               ),
             ],
           ),
@@ -251,6 +297,33 @@ class _RegisterViewState extends State<RegisterView> {
       ),
     );
   }
+
+  /// Estilos personalizados
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
+
+  ButtonStyle _blueButtonStyle() {
+    return ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF3b5998),
+      foregroundColor: Colors.white,
+      minimumSize: const Size.fromHeight(50),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
+  ButtonStyle _pinkButtonStyle() {
+    return ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFFED6275), // Rosado
+      foregroundColor: Colors.white,
+      minimumSize: const Size.fromHeight(50),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+
+
 }
-
-
