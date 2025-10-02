@@ -31,6 +31,14 @@ class AuthService {
         return await _auth.signInWithCredential(credential);
       }
 
+      // For GitHub
+      if (type == AuthProviderType.github) {
+        final credential = await AuthProviderFactory.createCredential(type);
+        if (credential == null) {
+          throw Exception('GitHub sign-in cancelled');
+        }
+        return await _auth.signInWithCredential(credential);
+      }
 
       // AGREGAR DEMAS ------------------------------------------------------------------------
 
@@ -53,6 +61,8 @@ class AuthService {
           .any((info) => info.providerId == 'google.com');
       final isFacebookUser = user.providerData
           .any((info) => info.providerId == 'facebook.com');
+      final isGithubUser = user.providerData
+          .any((info) => info.providerId == 'github.com');
 
       // Cerrar sesión de proveedores
       if (isGoogleUser) {
@@ -75,6 +85,13 @@ class AuthService {
           print('Error logout Facebook: $e');
         }
       }
+  
+      // For GitHub
+      if (isGithubUser) {
+        // No hay un método específico para cerrar sesión en GitHub
+        // Simplemente se cierra la sesión de Firebase
+      }
+      
 
       // AGREGAR DEMAS ------------------------------------------------------------------------
     }

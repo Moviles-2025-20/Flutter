@@ -63,6 +63,11 @@ class AuthViewModel extends ChangeNotifier {
     await _login(AuthProviderType.google);
   }
 
+  // Add login with GitHub
+  Future<void> loginWithGithub() async {
+    await _login(AuthProviderType.github);
+  }
+
   Future<void> loginWithFacebook() async {
     try {
       await FacebookAuth.instance.logOut();

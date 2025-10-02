@@ -97,9 +97,7 @@ class _LoginState extends State<Login> {
             label: 'Login with GitHub',
             icon: Icons.code,
             color: Colors.black,
-            onPressed: viewModel.isLoading ? null : () {
-              // viewModel.loginWithGithub()
-            },
+            onPressed: viewModel.isLoading ? null : () => viewModel.loginWithGithub(),
           ),
 
           const SizedBox(height: 16),
