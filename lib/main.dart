@@ -1,6 +1,7 @@
 import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/listEvents.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
+import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,8 @@ import 'pages/profile.dart';
 import 'pages/login/views/loading_view.dart';
 import 'pages/login/views/start.dart';
 import 'pages/login/views/login.dart';
+import 'pages/login/views/register.dart';
+
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +43,23 @@ class MyApp extends StatelessWidget {
             '/': (context) => const LoadingView(),
             '/start': (context) => const Start(),
             '/start/login': (context) => const Login(),
-            '/home': (context) => const MainPage(),
+            '/home': (context) => const MainPage(),}
+            ,
+          onGenerateRoute: (settings) {
+            if (settings.name == '/register') {
+              final uid = settings.arguments as String;
+              return MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider(
+                  // ⬅️ ENVUELVE CON PROVIDER AQUÍ
+                  create: (_) => RegisterViewModel(),
+                  child: RegisterView(uid: uid),
+                ),
+              );
+            }
+            return null;
           },
-      )
+
+        )
     );
   } 
 }

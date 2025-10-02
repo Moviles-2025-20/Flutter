@@ -40,7 +40,7 @@ class _LoginState extends State<Login> {
       // Verificar si es primera vez
       if (viewModel.isFirstTimeUser) {
         // Primera vez: ir a onboarding o bienvenida
-        Navigator.pushReplacementNamed(context, '/onboarding');
+        Navigator.pushReplacementNamed(context, '/register');
       } else {
         // Ya registrado: ir a home
         Navigator.pushReplacementNamed(context, '/home');
@@ -266,7 +266,12 @@ class _LoginState extends State<Login> {
                   onPressed: () {
                     // Ir inmediatamente sin esperar
                     if (viewModel.isFirstTimeUser) {
-                      Navigator.pushReplacementNamed(context, '/onboarding');
+                      // Primera vez: ir a registro con uid
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/register',
+                        arguments: viewModel.user!.uid,
+                      );
                     } else {
                       Navigator.pushReplacementNamed(context, '/home');
                     }
