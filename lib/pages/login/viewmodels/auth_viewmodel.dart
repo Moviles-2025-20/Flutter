@@ -1,11 +1,15 @@
 import 'package:app_flutter/pages/login/models/auth_models.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:app_flutter/util/firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService;
+  final FirebaseFirestore _db = FirebaseService.firestore;
 
   UserModel? _user;
   bool _isLoading = false;
@@ -33,6 +37,7 @@ class AuthViewModel extends ChangeNotifier {
             : 'unknown';
         _user = UserModel.fromFirebase(firebaseUser, providerId);
         await _checkFirstTimeUser();
+        await Future.delayed(const Duration(milliseconds: 500));
       } else {
         _user = null;
         _isFirstTimeUser = false;
@@ -42,19 +47,22 @@ class AuthViewModel extends ChangeNotifier {
     });
   }
 
-  //Check first time user
+
+
+
+  //Check first time user usando Firestore
   Future<void> _checkFirstTimeUser() async {
     if (_user == null) return;
-    
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'user_${_user!.uid}_has_logged_in';
-    
-    // Check if user has logged in before
-    _isFirstTimeUser = !prefs.containsKey(key);
-    
-    if (_isFirstTimeUser) {
-      // Mark user as having logged in
-      await prefs.setBool(key, true);
+
+    final doc = await _db
+        .collection('users')
+        .doc(_user!.uid)
+        .get();
+
+    if (!doc.exists || !doc.data()!.containsKey('profile')) {
+      _isFirstTimeUser = true;
+    } else {
+      _isFirstTimeUser = false;
     }
   }
 
@@ -93,6 +101,7 @@ class AuthViewModel extends ChangeNotifier {
       final providerId = userCredential.credential?.providerId ?? type.name;
       
       _user = UserModel.fromFirebase(userCredential.user!, providerId);
+      await _checkFirstTimeUser();
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -120,16 +129,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // Manual method to mark user as returning (optional)
-  Future<void> markAsReturningUser() async {
-    if (_user == null) return;
-    
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'user_${_user!.uid}_has_logged_in';
-    await prefs.setBool(key, true);
-    _isFirstTimeUser = false;
-    notifyListeners();
-  }
 
   @override
   void dispose() {
