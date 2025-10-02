@@ -1,4 +1,6 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class EventLocation {
   final String city;
   final String type;
@@ -82,4 +84,67 @@ class EventStats {
       rating: (json['rating'] ?? 0).toDouble(),
     );
   }
+}
+
+class Event {
+  final String id;
+  final List<String> eventType;
+  final bool active;
+  final String category;
+  final DateTime created;
+  final String description;
+  final EventLocation location;
+  final EventMetadata metadata;
+  final String name;
+  final EventSchedule schedule;
+  final EventStats stats;
+  final String title;
+  final String type;
+  final bool weatherDependent;
+
+  Event({
+    required this.id,
+    required this.eventType,
+    required this.active,
+    required this.category,
+    required this.created,
+    required this.description,
+    required this.location,
+    required this.metadata,
+    required this.name,
+    required this.schedule,
+    required this.stats,
+    required this.title,
+    required this.type,
+    required this.weatherDependent,
+  });
+
+  factory Event.fromJson(String id, Map<String, dynamic> json) {
+    return Event(
+      id: id,
+      eventType: json['EventType'] != null 
+          ? List<String>.from(json['EventType']) 
+          : [],
+      active: json['active'] ?? false,
+      category: json['category'] ?? '',
+      created: json['created'] != null
+          ? (json['created'] is String 
+              ? DateTime.parse(json['created'])
+              : (json['created'] as Timestamp).toDate())
+          : DateTime.now(),
+      description: json['description'] ?? '',
+      location: EventLocation.fromJson(json['location'] ?? {}),
+      metadata: EventMetadata.fromJson(json['metadata'] ?? {}),
+      name: json['name'] ?? '',
+      schedule: EventSchedule.fromJson(json['schedule'] ?? {}),
+      stats: EventStats.fromJson(json['stats'] ?? {}),
+      title: json['title'] ?? '',
+      type: json['type'] ?? '',
+      weatherDependent: json['weather_dependent'] ?? false,
+    );
+  }
+
+  bool get isPositive => stats.rating >= 4.0 || stats.popularity > 50;
+  bool get isNeutral => stats.rating >= 2.5 && stats.rating < 4.0;
+  bool get isNegative => stats.rating < 2.5;
 }
