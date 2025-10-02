@@ -1,6 +1,6 @@
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/event_filter.dart';
-import 'package:app_flutter/widgets/event_service.dart';
+import 'package:app_flutter/util/event_service.dart';
 import 'package:flutter/material.dart';
 
 class EventsViewModel extends ChangeNotifier {

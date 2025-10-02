@@ -36,7 +36,7 @@ class EventsMapListContent extends StatelessWidget {
               color: Colors.white,
           ),
         ),
-        backgroundColor: const Color(0xFF3C5BA9),
+        backgroundColor: const Color(0xFF6389E2),
         centerTitle: true,
         actions: [
           IconButton(
@@ -50,31 +50,49 @@ class EventsMapListContent extends StatelessWidget {
               );
             },
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.list,
-                  color: viewModel.isMapView ? Colors.grey : Colors.black,
-                ),
-                Switch(
-                  value: viewModel.isMapView,
-                  onChanged: (_) => viewModel.toggleView(),
-                  activeColor: const Color(0xFF6389E2),
-                ),
-                Icon(
-                  Icons.map,
-                  color: viewModel.isMapView ? Colors.black : Colors.grey,
-                ),
-              ],
-            ),
-          ),
+          
         ],
       ),
 
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              children: [
+                FloatingActionButton(
+                  onPressed: () => _showFiltersBottomSheet(context, viewModel),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.filter_alt_outlined),
+                      Text("Filtros"),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8), // opcional, espacio entre botón y el resto
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Icon(
+                        Icons.list,
+                        color: viewModel.isMapView ? Colors.grey : Colors.black,
+                      ),
+                      Switch(
+                        value: viewModel.isMapView,
+                        onChanged: (_) => viewModel.toggleView(),
+                        activeThumbColor: const Color(0xFF6389E2),
+                      ),
+                      Icon(
+                        Icons.map,
+                        color: viewModel.isMapView ? Colors.black : Colors.grey,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           // Barra de búsqueda
           SearchBar(viewModel: viewModel),
           
@@ -89,11 +107,6 @@ class EventsMapListContent extends StatelessWidget {
                 : EventsListView(events: viewModel.events, viewModel: viewModel),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFiltersBottomSheet(context, viewModel),
-        backgroundColor: const Color(0xFF6389E2),
-        child: const Icon(Icons.filter_list),
       ),
     );
   }
