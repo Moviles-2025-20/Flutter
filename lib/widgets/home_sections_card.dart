@@ -80,7 +80,7 @@ class _MindCardsGrid extends StatelessWidget {
         MindCard(
           title: 'Wish me Luck',
           color: Color(0xFFED6275),
-          url: '/whishMeLuck',
+          url: '/wishMeLuck',
           onTap: () => onCardTap(CardType.wishMeLuck),
         ),
         MindCard(

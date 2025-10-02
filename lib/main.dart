@@ -1,6 +1,7 @@
 import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/listEvents.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
+import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
             '/start': (context) => const Start(),
             '/start/login': (context) => const Login(),
             '/home': (context) => const MainPage(),
+            '/wishMeLuck': (context) => const WishMeLuckView(),
           },
       )
     );
