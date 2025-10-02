@@ -1,4 +1,5 @@
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
+import 'package:app_flutter/pages/notification.dart';
 import 'package:app_flutter/widgets/list_events/event_list.dart';
 import 'package:app_flutter/widgets/list_events/event_map.dart';
 import 'package:app_flutter/widgets/list_events/filters_widgets.dart';
@@ -25,20 +26,30 @@ class EventsMapListContent extends StatelessWidget {
     final viewModel = context.watch<EventsViewModel>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
         title: const Text(
-          'Events',
+          "Events",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 24,
+              color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        backgroundColor: const Color(0xFF3C5BA9),
+        centerTitle: true,
         actions: [
-          // Switch para alternar entre mapa y lista
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsPage(),
+                ),
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
@@ -61,6 +72,7 @@ class EventsMapListContent extends StatelessWidget {
           ),
         ],
       ),
+
       body: Column(
         children: [
           // Barra de búsqueda
