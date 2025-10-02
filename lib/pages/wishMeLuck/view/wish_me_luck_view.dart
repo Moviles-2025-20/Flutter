@@ -6,6 +6,10 @@ import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/services.dart';
 
 class WishMeLuckView extends StatelessWidget {
   
@@ -36,6 +40,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
   final WishMeLuckViewModel _viewModel = WishMeLuckViewModel();
 
+  // Variables para el acelerómetro
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  bool _isShaking = false;
+  DateTime? _lastShakeTime;
+  static const double _shakeThreshold = 10.0; // Umbral de sensibilidad ESO SE CAMBIO PARA PROBAR EN EMULADOR ERA 15
+  static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas
+
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +63,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
     // Cargamos la variable asincrónica
     _loadLastWishedTime();
+    _initAccelerometer();
   }
 
   Future<void> _loadLastWishedTime() async {
@@ -58,10 +71,61 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     setState(() {}); // refresca la UI para que HeaderSectionWML reciba el valor
   }
 
-  @override
-  void dispose() {
-    _shakeController.dispose();
-    super.dispose();
+  void _initAccelerometer() {
+    _accelerometerSubscription = accelerometerEventStream().listen(
+          (AccelerometerEvent event) {
+        _detectShake(event);
+      },
+      onError: (error) {
+        debugPrint('Error en acelerómetro: $error');
+      },
+    );
+  }
+
+  void _detectShake(AccelerometerEvent event) {
+    // Calcular la magnitud total del movimiento
+    final double magnitude = sqrt(
+        event.x * event.x +
+            event.y * event.y +
+            event.z * event.z
+    );
+
+    // Si la magnitud supera el umbral
+    if (magnitude > _shakeThreshold) {
+      final now = DateTime.now();
+
+      // Verificar cooldown
+      if (_lastShakeTime == null ||
+          now.difference(_lastShakeTime!).inMilliseconds > _shakeCooldown) {
+
+        if (!_isShaking) {
+          _isShaking = true;
+          _lastShakeTime = now;
+          _onShakeDetected();
+        }
+      }
+    }
+  }
+
+  Future<void> _onShakeDetected() async {
+    final viewModel = context.read<WishMeLuckViewModel>();
+
+    // No hacer nada si ya está cargando
+    if (viewModel.isLoading) {
+      _isShaking = false;
+      return;
+    }
+
+    debugPrint('Sacudida detectada!');
+
+    // Vibración (opcional)
+    HapticFeedback.mediumImpact();
+
+    await _triggerShake();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    await viewModel.wishMeLuck();
+
+    _isShaking = false;
   }
 
   Future<void> _triggerShake() async {
@@ -70,6 +134,13 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
       await _shakeController.reverse();
     }
   }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +170,43 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                   lastWished: lastWishedTime,
                 ),
                 const SizedBox(height: 30),
+
+                // Indicador de que puede sacudir el teléfono
+                if (!viewModel.isLoading)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6389E2).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF6389E2).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.vibration,
+                          color: Color(0xFF6389E2),
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Shake your phone or tap the button below!',
+                            style: TextStyle(
+                              color: Color(0xFF6389E2),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 20),
 
                 Magic8BallCard(
                   viewModel: viewModel,
