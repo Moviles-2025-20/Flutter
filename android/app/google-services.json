@@ -15,7 +15,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "457564875045-h94qge9m390p4jvdus35ml3qgh2fik75.apps.googleusercontent.com",
+          "client_id": "457564875045-ja6vuackfudvfino1bd5otsr535dphpe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobileclass.parchandes",
+            "certificate_hash": "4162fd75da8a04d221fb385dfcc175d91e9856bf"
+          }
+        },
+        {
+          "client_id": "457564875045-92ht5oakdkjstjuolsfb1jd2iv952gno.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -28,7 +36,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "457564875045-h94qge9m390p4jvdus35ml3qgh2fik75.apps.googleusercontent.com",
+              "client_id": "457564875045-92ht5oakdkjstjuolsfb1jd2iv952gno.apps.googleusercontent.com",
               "client_type": 3
             },
             {

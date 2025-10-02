@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class Inicio extends StatelessWidget {
-  const Inicio({super.key});
+class Start extends StatelessWidget {
+  const Start({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,7 @@ class Inicio extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/inicio/login');
+                    Navigator.pushNamed(context, '/start/login');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF6389E2),
@@ -71,31 +71,11 @@ class Inicio extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8), // esquinas redondeadas opcional
                     )
                   ),
-                  child: const Text("Log In", style: TextStyle(fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 255, 255, 255),)),
+                  child: const Text("Log In", style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20,
+                  color: Color.fromARGB(255, 255, 255, 255),)),
                 ),
                 const SizedBox(width: 20),
-                OutlinedButton(
-                  onPressed: () {
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromARGB(255, 255, 255, 255),
-                    side: const BorderSide(color: Color(0xFF6389E2), width: 1), // borde
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // esquinas redondeadas opcional
-                    ),
-                  ),
-                  child: const Text("Register" , style: TextStyle(fontWeight: FontWeight.bold,
-                color: Color(0xFF6389E2),)),
-                ),
               ],
-            ),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/home');
-              },
-              child: const Text("SKIP IT FOR NOW", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
             ),
           ],
       ),

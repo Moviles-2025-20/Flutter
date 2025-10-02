@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Parchandes</string>
+
+
+    <string name="facebook_app_id">837521402135992</string>
+
+
+    <string name="fb_login_protocol_scheme">fb837521402135992</string>
+
+    <string name="facebook_client_token">Td1775a610eaf7944a639b5b20ed14c0b</string>
+</resources>

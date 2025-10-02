@@ -1,14 +1,16 @@
 import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/listEvents.dart';
+import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
+import 'package:app_flutter/util/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'pages/notification.dart';
-import 'pages/home.dart';
+import 'package:provider/provider.dart';
+import 'pages/home/home.dart';
 import 'pages/detailEvent.dart';
 import 'pages/profile.dart';
-import 'pages/carga.dart';
-import 'pages/inicio.dart';
-import 'pages/login.dart';
+import 'pages/login/views/loading_view.dart';
+import 'pages/login/views/start.dart';
+import 'pages/login/views/login.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,21 +25,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Parchandes',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return ChangeNotifierProvider(
+        create: (_) => AuthViewModel(
+        authService: AuthService(),
       ),
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const Carga(),
-        '/inicio': (context) => const Inicio(),
-        '/inicio/login': (context) => const Login(),
-        '/home': (context) => const MainPage(),
-      },
+        child:MaterialApp(
+          title: 'Parchandes',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          ),
+          debugShowCheckedModeBanner: false,
+          initialRoute: '/',
+          routes: {
+            '/': (context) => const LoadingView(),
+            '/start': (context) => const Start(),
+            '/start/login': (context) => const Login(),
+            '/home': (context) => const MainPage(),
+          },
+      )
     );
-  }
+  } 
 }
 
 class MainPage extends StatefulWidget {
