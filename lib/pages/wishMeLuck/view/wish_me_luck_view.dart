@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class WishMeLuckView extends StatelessWidget {
+  
   const WishMeLuckView({Key? key}) : super(key: key);
 
   @override
@@ -21,6 +22,7 @@ class WishMeLuckView extends StatelessWidget {
 
 class _WishMeLuckContent extends StatefulWidget {
   const _WishMeLuckContent({Key? key}) : super(key: key);
+  
 
   @override
   State<_WishMeLuckContent> createState() => _WishMeLuckContentState();
@@ -30,10 +32,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
+  int lastWishedTime = 0; // inicializamos con 0
+
+  final WishMeLuckViewModel _viewModel = WishMeLuckViewModel();
 
   @override
   void initState() {
     super.initState();
+
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -42,6 +48,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     _shakeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
     );
+
+    // Cargamos la variable asincrónica
+    _loadLastWishedTime();
+  }
+
+  Future<void> _loadLastWishedTime() async {
+    lastWishedTime = await _viewModel.calculateDaysSinceLastWished();
+    setState(() {}); // refresca la UI para que HeaderSectionWML reciba el valor
   }
 
   @override
@@ -66,10 +80,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
       appBar: AppBar(
         title: const Text(
           'Wish Me Luck',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 255, 255, 255),
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF6389E2),
@@ -83,7 +94,10 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const HeaderSectionWML(),
+                // Enviamos la variable al Header
+                HeaderSectionWML(
+                  lastWished: lastWishedTime,
+                ),
                 const SizedBox(height: 30),
 
                 Magic8BallCard(

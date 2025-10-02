@@ -37,7 +37,7 @@ class WishMeLuckService {
         throw Exception('No hay eventos disponibles');
       }
 
-      // Seleccionar evento aleatorio
+      // Seleccionar evento aleatorio AGREGAR SMART
       final random = Random();
       final randomDoc = snapshot.docs[random.nextInt(snapshot.docs.length)];
       
@@ -54,8 +54,41 @@ class WishMeLuckService {
     }
   }
 
-  
+  Future<DateTime?> getLastWishedDate() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
 
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data.containsKey('lastWished')) {
+          return (data['lastWished'] as Timestamp).toDate();
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error al obtener la última fecha: $e');
+      return null;
+    }
+  }
+
+  Future<void> setLastWishedDate(DateTime date) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'lastWished': Timestamp.fromDate(date),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error al establecer la última fecha: $e');
+    }
+  }
 
   Future<void> addEvents(List<Map<String, dynamic>> events) async {
     try {

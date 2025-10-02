@@ -10,10 +10,12 @@ class WishMeLuckViewModel extends ChangeNotifier {
   WishMeLuckEvent? _currentEvent;
   bool _isLoading = false;
   String? _error;
+  int lastWishedTime = -1;
 
   WishMeLuckEvent? get currentEvent => _currentEvent;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int get lastWished => lastWishedTime;
 
   // Message
   String getMotivationalMessage() {
@@ -49,6 +51,25 @@ class WishMeLuckViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<int> calculateDaysSinceLastWished() async {
+    final now = DateTime.now();
+    final DateTime? lastWishedDate = await _service.getLastWishedDate();
+
+    int lastWishedTime = 0;
+
+    if (lastWishedDate == null) {
+      // Nunca se ha deseado suerte antes
+      await _service.setLastWishedDate(now);
+      lastWishedTime = 0;
+    } else {
+      final difference = now.difference(lastWishedDate).inDays;
+      lastWishedTime = difference;
+      notifyListeners(); // si estás en un ViewModel extendiendo ChangeNotifier
+    }
+
+    return lastWishedTime;
   }
 
   void clearEvent() {
