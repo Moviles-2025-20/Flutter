@@ -44,7 +44,7 @@ class RecommendationCard extends StatelessWidget {
         child: Column(
           children: [
 
-            Container(
+            SizedBox(
               height: 150, 
               child: Row(
                 children: [
@@ -259,50 +259,3 @@ class _LocationInfoHorizontal extends StatelessWidget {
   }
 }
 
-// Clase adicional para mostrar información de ubicación en formato vertical
-// (útil si necesitas más espacio)
-class _LocationInfo extends StatelessWidget {
-  final String? location;
-  final String? time;
-
-  const _LocationInfo({this.location, this.time});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (location != null) ...[
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 14, color: Colors.grey[800]),
-              SizedBox(width: 4),
-              Text(
-                location!,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 2),
-        ],
-        if (time != null)
-          Row(
-            children: [
-              Icon(Icons.access_time, size: 14, color: Colors.grey[800]),
-              SizedBox(width: 4),
-              Text(
-                time!,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-}

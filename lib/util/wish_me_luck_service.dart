@@ -19,8 +19,6 @@ class WishMeLuckService {
 
       final QuerySnapshot snapshot = await _firestore
           .collection('events')
-          .where('active', isEqualTo: true)
-          .limit(10)
           .get();
 
       print('Eventos encontrados: ${snapshot.docs.length}');
