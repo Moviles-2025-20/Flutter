@@ -50,11 +50,12 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
-          '/': (context) => const LoadingView(),
-          '/start': (context) => const Start(),
-          '/start/login': (context) => const Login(),
-          '/home': (context) => const MainPage(),
-        },
+            '/': (context) => const LoadingView(),
+            '/start': (context) => const Start(),
+            '/start/login': (context) => const Login(),
+            '/home': (context) => const MainPage(),
+            '/wishMeLuck': (context) => const WishMeLuckView(),
+          },
         onGenerateRoute: (settings) {
           if (settings.name == '/register') {
             final uid = settings.arguments as String;
@@ -68,21 +69,7 @@ class MyApp extends StatelessWidget {
           return null;
         },
       ),
-        child:MaterialApp(
-          title: 'Parchandes',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          ),
-          debugShowCheckedModeBanner: false,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const LoadingView(),
-            '/start': (context) => const Start(),
-            '/start/login': (context) => const Login(),
-            '/home': (context) => const MainPage(),
-            '/wishMeLuck': (context) => const WishMeLuckView(),
-          },
-      )
+          
     );
   }
 }
