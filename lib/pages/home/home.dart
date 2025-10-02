@@ -1,7 +1,9 @@
 
+import 'package:app_flutter/main.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
 import 'package:app_flutter/widgets/recommendation_card.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
@@ -9,25 +11,36 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-
+     return Scaffold(
       backgroundColor: const Color(0xFFFEFAED),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Component
-            CustomHeader(
-              userName: 'Juliana',
-              profileImagePath: 'assets/images/profileimg.png',
-              onNotificationTap: () {
-                // Handle notification tap
-                print('Notification tapped');
-              },
-              onSearchSubmitted: (query) {
-                // Handle search
-                print('Search: $query');
-              },
-            ),
+        child: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final user = snapshot.data;
+
+            if (user == null) {
+              // Usuario no ha iniciado sesión
+              return const Center(child: Text("Please log in"));
+            }
+
+            // Usuario autenticado
+            return Column(
+              children: [
+                CustomHeader(
+                  userName: user.displayName ?? "User",
+                  profileImagePath: user.photoURL ?? 'assets/images/default_profile.png',
+                  onNotificationTap: () {
+                    print('Notification tapped');
+                  },
+                  onSearchSubmitted: (query) {
+                    print('Search: $query');
+                  },
+                ),
             
             // Body Content
             Expanded(
@@ -39,7 +52,36 @@ class Home extends StatelessWidget {
                     // Mind Section Component
                     HomeSectionsCard(
                       onCardTap: (cardType) {
-                        print('Card tapped: $cardType');
+                        final mainPageState = context.findAncestorStateOfType<MainPageState>();
+                        
+                        switch(cardType) {
+                          case CardType.weeklyChallenge:
+                            // Agregar cuando ya este el WeeklyChallenge
+                            /*mainPageState?.navigatorKeys[0].currentState?.push(
+                              MaterialPageRoute(builder: (_) => WeeklyChallengePage()),
+                            );*/ 
+                            break;
+                            
+                          case CardType.personalityQuiz:
+                          /*
+                            mainPageState?.navigatorKeys[0].currentState?.push(
+                              MaterialPageRoute(builder: (_) => PersonalityQuizPage()),
+                            );*/
+                            break;
+                            
+                          case CardType.wishMeLuck:
+                            // Cambia a la tab WishMeLuck (2)
+                            mainPageState?.selectTab(2);
+                            break;
+                            
+                          case CardType.map:
+                            // Agregar cuando ya este el Map
+                            /*
+                            mainPageState?.navigatorKeys[0].currentState?.push(
+                              MaterialPageRoute(builder: (_) => MapPage()),
+                            );*/
+                            break;
+                        }
                       },
                     ),
                     
@@ -84,9 +126,11 @@ class Home extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
       
+    )
+    )
     );
   }
 }
