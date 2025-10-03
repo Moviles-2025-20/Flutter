@@ -22,13 +22,23 @@ class _SearchBarState extends State<SearchBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1), // color y opacidad de la sombra
+            blurRadius: 8, // difuminado
+            offset: const Offset(0, 4), // posición de la sombra
+          ),
+        ],
+      ),
       child: TextField(
         controller: _controller,
         decoration: InputDecoration(
           hintText: 'Search events...',
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF6389E2)),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFFE3944F)),
           suffixIcon: _controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear),
@@ -38,15 +48,10 @@ class _SearchBarState extends State<SearchBar> {
                   },
                 )
               : null,
-          filled: true,
-          fillColor: Colors.grey[100],
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
+          border: InputBorder.none, // quitamos el borde para usar solo el del Container
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         onChanged: (value) {
-          // Debounce para evitar muchas consultas
           Future.delayed(const Duration(milliseconds: 500), () {
             if (_controller.text == value) {
               widget.viewModel.updateSearchQuery(value);
@@ -67,7 +72,6 @@ class ActiveFiltersChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.white,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -114,8 +118,8 @@ class ActiveFiltersChips extends StatelessWidget {
               ),
             TextButton.icon(
               onPressed: viewModel.clearFilters,
-              icon: const Icon(Icons.clear_all),
-              label: const Text('Clear all'),
+              icon: const Icon(Icons.clear_all, color: Colors.black,),
+              label: const Text('Clear all', style: TextStyle(color: Color.fromARGB(255, 49, 49, 49)),),
             ),
           ],
         ),

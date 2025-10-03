@@ -23,6 +23,7 @@ class EventFilters {
     bool? weatherDependent,
     String? city,
   }) {
+    print(category);
     return EventFilters(
       searchQuery: searchQuery ?? this.searchQuery,
       eventTypes: eventTypes ?? this.eventTypes,

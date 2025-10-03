@@ -53,25 +53,30 @@ class EventsMapListContent extends StatelessWidget {
           
         ],
       ),
+      
 
       body: Column(
         children: [
+           // Barra de búsqueda
+          const SizedBox(height: 8),
+
+          SearchBar(viewModel: viewModel),
+
+          const SizedBox(height: 8),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                FloatingActionButton(
+                FloatingActionButton.extended(
                   onPressed: () => _showFiltersBottomSheet(context, viewModel),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.filter_alt_outlined, size: 20),
-                      SizedBox(width: 6), // espacio entre icono y texto
-                      Text(
-                        "Filtros",
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+                  icon: const Icon(Icons.filter_alt_outlined, size: 25, color: Color(0xFFE3944F)),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0, 
+                  highlightElevation: 0, 
+                  label: const Text(
+                    "Filtros",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Color(0xFFE3944F)),
                   ),
                 ),
                 const SizedBox(width: 8), // opcional, espacio entre botón y el resto
@@ -98,8 +103,7 @@ class EventsMapListContent extends StatelessWidget {
               ],
             ),
           ),
-          // Barra de búsqueda
-          SearchBar(viewModel: viewModel),
+         
           
           // Chips de filtros activos
           if (viewModel.filters.hasActiveFilters)
