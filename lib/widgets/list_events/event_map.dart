@@ -5,8 +5,9 @@ import 'package:geolocator/geolocator.dart';
 
 class EventsMapView extends StatefulWidget {
   final List<Event> events;
-
   const EventsMapView({Key? key, required this.events}) : super(key: key);
+  
+
 
   @override
   State<EventsMapView> createState() => _EventsMapViewState();
@@ -17,6 +18,8 @@ class _EventsMapViewState extends State<EventsMapView> {
   Set<Marker> _markers = {};
   // USER LOCATION
   LatLng? _userPosition;
+  List<Event> _sortedEvents = [];
+  final int limit = 3; 
 
 
   @override
@@ -35,18 +38,27 @@ class _EventsMapViewState extends State<EventsMapView> {
     }
   }
 
-  void _createMarkers() {
-    _markers = widget.events.map((event) {
-      // Validar coordenadas
-      if (event.location.coordinates.length < 2) {
-        return null;
-      }
-      
+void _createMarkers() {
+    
+    List<Event> eventsToShow =
+        _sortedEvents.isNotEmpty ? _sortedEvents : widget.events;
+
+    _markers = eventsToShow.map((event) {
+      if (event.location.coordinates.length < 2) return null;
+
       final lat = event.location.coordinates[0];
       final lng = event.location.coordinates[1];
-      
-      if (lat == 0 && lng == 0) {
-        return null;
+      if (lat == 0 && lng == 0) return null;
+
+      double? distanceKm;
+      if (_userPosition != null) {
+        distanceKm = Geolocator.distanceBetween(
+          _userPosition!.latitude,
+          _userPosition!.longitude,
+          lat,
+          lng,
+        ) /
+            1000;
       }
 
       return Marker(
@@ -54,7 +66,9 @@ class _EventsMapViewState extends State<EventsMapView> {
         position: LatLng(lat, lng),
         infoWindow: InfoWindow(
           title: event.name,
-          snippet: '${event.location.city} - ${event.stats.rating}⭐',
+          snippet: distanceKm != null
+              ? '${event.location.city} - ${distanceKm.toStringAsFixed(1)} km'
+              : event.location.city,
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(
           event.isPositive ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed,
@@ -62,13 +76,15 @@ class _EventsMapViewState extends State<EventsMapView> {
       );
     }).whereType<Marker>().toSet();
 
+    // USER LOCATION
     if (_userPosition != null) {
       _markers.add(
         Marker(
           markerId: const MarkerId("user_location"),
           position: _userPosition!,
           infoWindow: const InfoWindow(title: "You are here"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         ),
       );
     }
@@ -97,22 +113,38 @@ class _EventsMapViewState extends State<EventsMapView> {
 
     // Get current location
     final position = await Geolocator.getCurrentPosition().catchError((e) {
-  print("Error al obtener ubicación: $e");
-  return null;
-});
-
-if (position != null) {
-  setState(() {
-    _userPosition = LatLng(position.latitude, position.longitude);
-    _createMarkers();
-  });
-} else {
-  print("No se pudo obtener ubicación, usando fallback Bogotá.");
-}
-    setState(() {
-      _userPosition = LatLng(position.latitude, position.longitude);
-      _createMarkers();
+      print("Error al obtener ubicación: $e");
+      return null;
     });
+
+    if (position != null) {
+      setState(() {
+        _userPosition = LatLng(position.latitude, position.longitude);
+        //USER DISTANCE SORT - THIS MAKE TO SELECT THE NEAREST EVENTS
+        _sortedEvents = List.from(widget.events);
+        _sortedEvents.sort((a, b) {
+          final aDist = Geolocator.distanceBetween(
+            _userPosition!.latitude,
+            _userPosition!.longitude,
+            a.location.coordinates[0],
+            a.location.coordinates[1],
+          );
+          final bDist = Geolocator.distanceBetween(
+            _userPosition!.latitude,
+            _userPosition!.longitude,
+            b.location.coordinates[0],
+            b.location.coordinates[1],
+          );
+          return aDist.compareTo(bDist);
+        });
+
+        if (limit != null && limit > 0 && _sortedEvents.length > limit) {
+          _sortedEvents = _sortedEvents.sublist(0, limit);
+        }
+
+        _createMarkers();
+      });
+    }
   }
 
   @override
