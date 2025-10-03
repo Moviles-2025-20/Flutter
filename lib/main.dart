@@ -1,6 +1,5 @@
 import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
-import 'package:app_flutter/pages/listEvents.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
@@ -147,7 +146,7 @@ class MainPageState extends State<MainPage> {
             key: _navigatorKeys[1],
             onGenerateRoute: (settings) {
               return MaterialPageRoute(
-                builder: (_) => ListEvents(),
+                builder: (_) => EventsMapListView(),
               );
             },
           ),
