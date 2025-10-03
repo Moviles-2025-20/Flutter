@@ -3,7 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../util/firebase_service.dart';
+
 class CommentViewModel extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseService.firestore;
   Future<void> submitComment({
     required String eventId,
     required String title,
@@ -14,26 +17,30 @@ class CommentViewModel extends ChangeNotifier {
     try {
       String? imageUrl;
 
-      if (imageFile != null) {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('events/$eventId/comments/${DateTime.now().millisecondsSinceEpoch}.jpg');
 
+      if (imageFile != null) {
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+        final ref = FirebaseStorage.instance.ref().child("comments/$eventId/$fileName");
         await ref.putFile(imageFile);
         imageUrl = await ref.getDownloadURL();
       }
 
-      await FirebaseFirestore.instance
-          .collection('events')
+      final commentData = {
+        "eventId": eventId,
+        "title": title,
+        "description": description,
+        "rating": rating,
+        "imageUrl": imageUrl,
+        "createdAt": FieldValue.serverTimestamp(),
+      };
+
+      await _firestore
+          .collection("events")
           .doc(eventId)
-          .collection('comments')
-          .add({
-        'title': title,
-        'description': description,
-        'rating': rating,
-        'imageUrl': imageUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+          .collection("comments")
+          .add(commentData);
+      debugPrint("Guardando comentario en evento: ${eventId}");
+      debugPrint(" Comentario guardado en Firestore");
     } catch (e) {
       debugPrint("Error al enviar comentario: $e");
     }
