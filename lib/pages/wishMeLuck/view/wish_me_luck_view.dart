@@ -6,6 +6,10 @@ import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sensors_plus/sensors_plus.dart'; // Flutter plugin used to access device sensors
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/services.dart';
 
 class WishMeLuckView extends StatelessWidget {
   
@@ -36,6 +40,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
   final WishMeLuckViewModel _viewModel = WishMeLuckViewModel();
 
+  // Variables para el acelerómetro
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  bool _isShaking = false;
+  DateTime? _lastShakeTime;
+  static const double _shakeThreshold = 10.0; // Umbral de sensibilidad ESO SE CAMBIO PARA PROBAR EN EMULADOR ERA 15
+  static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas, evita múltiples detecciones rápidas
+
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +63,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
     // Cargamos la variable asincrónica
     _loadLastWishedTime();
+    _initAccelerometer();
   }
 
   Future<void> _loadLastWishedTime() async {
@@ -58,10 +71,63 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     setState(() {}); // refresca la UI para que HeaderSectionWML reciba el valor
   }
 
-  @override
-  void dispose() {
-    _shakeController.dispose();
-    super.dispose();
+  void _initAccelerometer() {
+    // The sensors_plus package is constantly updated, so we use the event stream to get real-time data of the accelerometer
+    _accelerometerSubscription = accelerometerEventStream().listen( 
+          (AccelerometerEvent event) {
+        _detectShake(event);
+      },
+      onError: (error) {
+        debugPrint('Error en acelerómetro: $error');
+      },
+    );
+  }
+
+  /* Function used to detect if the movement of the device is a shake, using the magnitude of the threshold */
+  void _detectShake(AccelerometerEvent event) {
+    // Find the magnitude of the acceleration vector
+    final double magnitude = sqrt(
+        event.x * event.x +
+        event.y * event.y +
+        event.z * event.z
+    );
+
+    // If the magnitude exceeds the threshold, we consider it a shake
+    if (magnitude > _shakeThreshold) {
+      final now = DateTime.now();
+
+      // Check cooldown to avoid multiple shake detections in a short time
+      if (_lastShakeTime == null || now.difference(_lastShakeTime!).inMilliseconds > _shakeCooldown) {
+        if (!_isShaking) {
+          _isShaking = true;
+          _lastShakeTime = now;
+          _onShakeDetected();
+        }
+      }
+    }
+  }
+
+  // Function triggered when a shake is detected
+  Future<void> _onShakeDetected() async {
+    final viewModel = context.read<WishMeLuckViewModel>();
+
+    // No hacer nada si ya está cargando
+    if (viewModel.isLoading) {
+      _isShaking = false;
+      return;
+    }
+
+    debugPrint('Sacudida detectada!');
+
+    // Feedback of vibration when a shake is detected
+    HapticFeedback.mediumImpact();
+
+    // Generate the same reaction of the app as if the button is pressed
+    await _triggerShake();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    await viewModel.wishMeLuck();
+
+    _isShaking = false;
   }
 
   Future<void> _triggerShake() async {
@@ -70,6 +136,13 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
       await _shakeController.reverse();
     }
   }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +171,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                 HeaderSectionWML(
                   lastWished: lastWishedTime,
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 Magic8BallCard(
                   viewModel: viewModel,

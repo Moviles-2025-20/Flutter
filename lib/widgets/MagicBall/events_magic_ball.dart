@@ -9,7 +9,7 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(40),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -25,6 +25,11 @@ class EmptyState extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 10),
+          Icon(
+            Icons.vibration,
+            color: Color(0xFF6389E2),
+            size: 20,
+          ),
           Text(
             'Shake or Tap the button below',
             style: TextStyle(
