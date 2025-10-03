@@ -118,22 +118,46 @@ class DetailEvent extends StatelessWidget {
             const SizedBox(height: 16),
 
             const SizedBox(height: 16),
-
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+Row(
+  children: [
+    Expanded(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orangeAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MakeCommentPage(
+                eventId: "UecLLDMASUwqsFPh8zTa",
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MakeCommentPage(eventId: "UecLLDMASUwqsFPh8zTa",)),
-                );
-              },
-              child: const Text("Make a Comment"),
             ),
+          );
+        },
+        child: const Text("Make a Comment"),
+      ),
+    ),
+    const SizedBox(width: 12), // espacio entre botones
+    Expanded(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orangeAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () {
+          // Acción al presionar Check In
+        },
+        child: const Text("Check In"),
+      ),
+    ),
+  ],
+),
 
             const Divider(),
             _buildRatingSection(),
