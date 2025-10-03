@@ -31,22 +31,15 @@ class HeaderSectionWML extends StatelessWidget {
           children: [
             const SizedBox(height: 8),
 
-            if (lastWished != null) ...[
+            if (lastWished != 0) ...[
               Text(
-                "Last time you wished luck for:",
+                "Last time you wished luck for:$lastWished days ago",
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[700],
                 ),
               ),
-              Text(
-                "$lastWished days ago",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              
             ],
             
           ],

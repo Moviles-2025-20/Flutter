@@ -6,7 +6,7 @@ import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sensors_plus/sensors_plus.dart';
+import 'package:sensors_plus/sensors_plus.dart'; // Flutter plugin used to access device sensors
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/services.dart';
@@ -45,7 +45,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   bool _isShaking = false;
   DateTime? _lastShakeTime;
   static const double _shakeThreshold = 10.0; // Umbral de sensibilidad ESO SE CAMBIO PARA PROBAR EN EMULADOR ERA 15
-  static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas
+  static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas, evita múltiples detecciones rápidas
 
 
   @override
@@ -72,7 +72,8 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   }
 
   void _initAccelerometer() {
-    _accelerometerSubscription = accelerometerEventStream().listen(
+    // The sensors_plus package is constantly updated, so we use the event stream to get real-time data of the accelerometer
+    _accelerometerSubscription = accelerometerEventStream().listen( 
           (AccelerometerEvent event) {
         _detectShake(event);
       },
@@ -82,22 +83,21 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     );
   }
 
+  /* Function used to detect if the movement of the device is a shake, using the magnitude of the threshold */
   void _detectShake(AccelerometerEvent event) {
-    // Calcular la magnitud total del movimiento
+    // Find the magnitude of the acceleration vector
     final double magnitude = sqrt(
         event.x * event.x +
-            event.y * event.y +
-            event.z * event.z
+        event.y * event.y +
+        event.z * event.z
     );
 
-    // Si la magnitud supera el umbral
+    // If the magnitude exceeds the threshold, we consider it a shake
     if (magnitude > _shakeThreshold) {
       final now = DateTime.now();
 
-      // Verificar cooldown
-      if (_lastShakeTime == null ||
-          now.difference(_lastShakeTime!).inMilliseconds > _shakeCooldown) {
-
+      // Check cooldown to avoid multiple shake detections in a short time
+      if (_lastShakeTime == null || now.difference(_lastShakeTime!).inMilliseconds > _shakeCooldown) {
         if (!_isShaking) {
           _isShaking = true;
           _lastShakeTime = now;
@@ -107,6 +107,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     }
   }
 
+  // Function triggered when a shake is detected
   Future<void> _onShakeDetected() async {
     final viewModel = context.read<WishMeLuckViewModel>();
 
@@ -118,9 +119,10 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
     debugPrint('Sacudida detectada!');
 
-    // Vibración (opcional)
+    // Feedback of vibration when a shake is detected
     HapticFeedback.mediumImpact();
 
+    // Generate the same reaction of the app as if the button is pressed
     await _triggerShake();
     await Future.delayed(const Duration(milliseconds: 1500));
     await viewModel.wishMeLuck();
@@ -169,43 +171,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                 HeaderSectionWML(
                   lastWished: lastWishedTime,
                 ),
-                const SizedBox(height: 30),
-
-                // Indicador de que puede sacudir el teléfono
-                if (!viewModel.isLoading)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6389E2).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF6389E2).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(
-                          Icons.vibration,
-                          color: Color(0xFF6389E2),
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Shake your phone or tap the button below!',
-                            style: TextStyle(
-                              color: Color(0xFF6389E2),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 const SizedBox(height: 20),
 
                 Magic8BallCard(

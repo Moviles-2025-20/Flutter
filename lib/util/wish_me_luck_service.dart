@@ -10,8 +10,7 @@ class WishMeLuckService {
 
 
   //Lista para poblar la base de datos
-  List<Map<String, dynamic>> studentEvents = [
-  ];
+  List<Map<String, dynamic>> studentEvents = [];
 
   Future<WishMeLuckEvent> getWishMeLuckEvent() async {
     try {
