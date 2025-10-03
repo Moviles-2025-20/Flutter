@@ -5,6 +5,7 @@ import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
 import 'package:app_flutter/util/auth_service.dart';
+import 'package:app_flutter/widgets/comment/viewmodels/comment_viewmodel.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -40,6 +41,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileViewModel(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CommentViewModel(),
         ),
       ],
       child: MaterialApp(
