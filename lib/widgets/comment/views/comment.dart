@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/comment_viewmodel.dart';
+import '../../../pages/events/viewmodel/comment_viewmodel.dart';
 
 class MakeCommentPage extends StatefulWidget {
   final String eventId; 
