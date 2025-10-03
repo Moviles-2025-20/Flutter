@@ -16,6 +16,10 @@
             android:name="com.facebook.sdk.ClientToken"
             android:value="@string/facebook_client_token"/>
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyANQ7gr1mr8Uip2V9Nn1D0RZ9bBQUPjiDk"/>
+
         <!-- Actividad de Facebook -->
         <activity
             android:name="com.facebook.FacebookActivity"
