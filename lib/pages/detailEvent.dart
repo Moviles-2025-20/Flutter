@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_flutter/widgets/comment/views/comment.dart';
 
 class DetailEvent extends StatelessWidget {
   const DetailEvent({super.key});
@@ -117,6 +118,23 @@ class DetailEvent extends StatelessWidget {
             const SizedBox(height: 16),
 
             const SizedBox(height: 16),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MakeCommentPage(eventId: "UecLLDMASUwqsFPh8zTa",)),
+                );
+              },
+              child: const Text("Make a Comment"),
+            ),
+
             const Divider(),
             _buildRatingSection(),
 
