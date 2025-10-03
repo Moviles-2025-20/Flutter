@@ -48,6 +48,8 @@ class WishMeLuckViewModel extends ChangeNotifier {
       _error = 'Error al obtener evento: $e';
       _currentEvent = null;
     } finally {
+      await _service.setLastWishedDate(DateTime.now());
+      calculateDaysSinceLastWished();
       _isLoading = false;
       notifyListeners();
     }
@@ -66,7 +68,7 @@ class WishMeLuckViewModel extends ChangeNotifier {
     } else {
       final difference = now.difference(lastWishedDate).inDays;
       lastWishedTime = difference;
-      notifyListeners(); // si estás en un ViewModel extendiendo ChangeNotifier
+      notifyListeners();
     }
 
     return lastWishedTime;
