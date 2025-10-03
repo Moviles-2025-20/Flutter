@@ -74,9 +74,7 @@ class EventsService {
 
       // Filtro por tipos de evento
       if (filters.eventTypes != null && filters.eventTypes!.isNotEmpty) {
-        final hasMatchingType = event.eventType.any(
-          (type) => filters.eventTypes!.contains(type),
-        );
+        final hasMatchingType = filters.eventTypes!.contains(event.eventType);
         if (!hasMatchingType) return false;
       }
 

@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/detailEvent.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
 import 'package:flutter/material.dart';
@@ -79,88 +80,151 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () {
-          // Navegar a detalles del evento
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            if (event.metadata.imageUrl.isNotEmpty && event.metadata.imageUrl != 'TEST')
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const DetailEvent(),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 3,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  event.metadata.imageUrl,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 150,
-                    color: const Color(0xFF6389E2).withValues(alpha: 0.1),
-                    child: const Icon(Icons.event, size: 50),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+                child: SizedBox(
+                  width: 120,
+                  child: Image.network(
+                    event.metadata.imageUrl, // tu campo con la URL
+                    fit: BoxFit.cover,       // llena el contenedor sin dejar bordes
+                    errorBuilder: (context, error, stackTrace) {
+                      // Si hay error en la carga, muestra una imagen de respaldo
+                      return Image.asset(
+                        "assets/images/event.jpg",
+                        fit: BoxFit.cover,
+                      );
+                    },
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Event types
-                  if (event.eventType.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      children: event.eventType
-                          .take(2)
-                          .map((type) => Chip(
-                                label: Text(type, style: const TextStyle(fontSize: 10)),
-                                padding: EdgeInsets.zero,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ))
-                          .toList(),
-                    ),
-                  const SizedBox(height: 8),
-                  
-                  // Title
-                  Text(
-                    event.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Location and rating
-                  Row(
+
+              // Contenido
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
+                      // Título naranja
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3944F),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Text(
-                          event.location.city,
-                          style: const TextStyle(color: Colors.grey),
+                          event.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const Icon(Icons.star, size: 16, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(
-                        event.stats.rating.toStringAsFixed(1),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      const SizedBox(height: 6),
+
+                      // Fila principal: descripción + detalles
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Descripción (ocupa lo que quede)
+                          Flexible(
+                            child: Text(
+                              event.description,
+                              maxLines: 6, // ajusta si quieres más/menos líneas
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Detalles a la derecha
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.25, // ajusta este valor según el diseño de tu card
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 16),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        event.location.address,
+                                        maxLines:2,
+                                        overflow: TextOverflow.ellipsis, // corta con "..." si es muy largo
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.access_time, size: 16),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        event.schedule.times.join(', '),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.category, size: 16),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        event.category,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
 }

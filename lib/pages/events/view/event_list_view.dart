@@ -63,9 +63,14 @@ class EventsMapListContent extends StatelessWidget {
                 FloatingActionButton(
                   onPressed: () => _showFiltersBottomSheet(context, viewModel),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.filter_alt_outlined),
-                      Text("Filtros"),
+                      Icon(Icons.filter_alt_outlined, size: 20),
+                      SizedBox(width: 6), // espacio entre icono y texto
+                      Text(
+                        "Filtros",
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
                     ],
                   ),
                 ),
