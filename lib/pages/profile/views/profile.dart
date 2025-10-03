@@ -1,5 +1,6 @@
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
+import 'package:app_flutter/pages/login/views/login.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -349,7 +350,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFED6275), minimumSize: const Size(double.infinity, 40)),
-                  onPressed: authViewModel.isLoading ? null : () => authViewModel.logout(),
+                  onPressed: authViewModel.isLoading
+                      ? null
+                      : () async {
+                    await authViewModel.logout();
+                    if (!mounted) return;
+                    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                      '/start/login',
+                          (route) => false,
+                    );
+                  },
+
                   child: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(height: 10),
