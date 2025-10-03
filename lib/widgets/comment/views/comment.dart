@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/comment_viewmodel.dart';
 
 class MakeCommentPage extends StatefulWidget {
   final String eventId; 
@@ -28,12 +30,19 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
     }
   }
 
-  void _submitComment() {
+  Future<void> _submitComment() async {
+    final viewModel = Provider.of<CommentViewModel>(context, listen: false);
 
-    print("Title: ${titleController.text}");
-    print("Description: ${descriptionController.text}");
-    print("Rating: $rating");
-    print("Image: ${_selectedImage?.path}");
+    await viewModel.submitComment(
+      eventId: widget.eventId,
+      title: titleController.text,
+      description: descriptionController.text,
+      rating: rating,
+      imageFile: _selectedImage,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override

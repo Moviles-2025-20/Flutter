@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:app_flutter/widgets/comment/comment.dart';
+import 'package:app_flutter/widgets/comment/views/comment.dart';
 
 class DetailEvent extends StatelessWidget {
   const DetailEvent({super.key});
