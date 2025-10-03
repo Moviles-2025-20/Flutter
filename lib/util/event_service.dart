@@ -89,6 +89,28 @@ class EventsService {
     }).toList();
   }
 
+  // Obtener evento por ID
+    Future<Event?> getEventById(String eventId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final doc = await _firestore.collection('events').doc(eventId).get();
+      if (!doc.exists) return null;
+
+
+      final data = doc.data() as Map<String, dynamic>;
+      print("DEBUG EVENT DATA: $data");
+      return Event.fromJson(doc.id, data);
+    } catch (e) {
+      
+      print('Error al obtener evento por ID: $e ');
+      throw Exception('Error al obtener evento por ID: $e');
+    }
+  }
+
   // Obtener ciudades únicas (para el filtro)
   Future<List<String>> getAvailableCities() async {
     try {

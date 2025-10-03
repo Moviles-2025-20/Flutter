@@ -7,12 +7,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/home/home.dart';
-import 'pages/detailEvent.dart';
+import 'pages/events/view/event_detail_view.dart';
 import 'pages/profile.dart';
 import 'pages/login/views/loading_view.dart';
 import 'pages/login/views/start.dart';
 import 'pages/login/views/login.dart';
-
+import 'util/event_service.dart';
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -58,11 +58,12 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    Home(),
-    EventsMapListView(),
-    DetailEvent(),
-    ProfilePage(),
+  final List<Widget> _pages = [
+    const Home(),
+    const EventsMapListView(),
+    // Placeholder, will be replaced in build method
+    const SizedBox(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -70,15 +71,32 @@ class _MainPageState extends State<MainPage> {
       _selectedIndex = index;
     });
   }
-
   @override
   Widget build(BuildContext context) {
+    Widget bodyWidget;
+    if (_selectedIndex == 2) {
+      bodyWidget = FutureBuilder(
+        future: EventsService().getEventById("UecLLDMASUwqsFPh8zTa"),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError || snapshot.data == null) {
+            return const Center(child: Text('Event not found.'));
+          } else {
+            return DetailEvent(event: snapshot.data!);
+          }
+        },
+      );
+    } else {
+      bodyWidget = _pages[_selectedIndex];
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Demo Navigation"),
         centerTitle: true,
       ),
-      body: _pages[_selectedIndex],
+      body: bodyWidget,
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF3C5BA9),
