@@ -7,6 +7,7 @@ class RegisterView extends StatefulWidget {
   final String uid;
   const RegisterView({super.key, required this.uid});
 
+
   @override
   State<RegisterView> createState() => _RegisterViewState();
 }
@@ -16,6 +17,7 @@ class _RegisterViewState extends State<RegisterView> {
   // Controllers para campos que pueden venir de Auth
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+
 
 
   final List<String> categories = [
@@ -44,6 +46,7 @@ class _RegisterViewState extends State<RegisterView> {
   TimeOfDay? _endTime;
 
   User? firebaseUser;
+  int _indoorOutdoorScore = 50;
 
 
   @override
@@ -141,7 +144,36 @@ class _RegisterViewState extends State<RegisterView> {
               ),
 
               const SizedBox(height: 20),
-
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Do you usually prefer indoor or outdoor activities?",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Slider(
+                    value: _indoorOutdoorScore.toDouble(),
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    label: _indoorOutdoorScore <= 50 ? "Indoor" : "Outdoor",
+                    onChanged: (val) {
+                      setState(() {
+                        _indoorOutdoorScore = val.toInt();
+                      });
+                      viewModel.indoorOutdoorScore = _indoorOutdoorScore;
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text("Indoor"),
+                      Text("Outdoor"),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               /// Likes como chips naranjas
               const Text("Preferences",
                   style: TextStyle(fontWeight: FontWeight.bold)),

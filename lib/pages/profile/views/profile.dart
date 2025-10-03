@@ -104,7 +104,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
   // ---------------------- Agregar categorías ----------------------
   void _showAddCategoryDialog(BuildContext context, ProfileViewModel viewModel) {
     final availableCategories = [
@@ -142,8 +141,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     value: selected.contains(category),
                     onChanged: (bool? value) {
                       setState(() {
-                        if (value == true) selected.add(category);
-                        else selected.remove(category);
+                        if (value == true) {
+                          selected.add(category);
+                        } else {
+                          selected.remove(category);
+                        }
                       });
                     },
                   );
@@ -191,9 +193,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Error: $e")),
+                  Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                    '/start',
+                        (route) => false,
                   );
                 }
               }
@@ -254,6 +256,13 @@ class _ProfilePageState extends State<ProfilePage> {
           final user = profileViewModel.currentUser!;
           final profile = user.profile;
           final preferences = user.preferences;
+
+          // indoor/outdoor calc
+          final int indoorScore = (preferences.indoorOutdoorScore ?? 50).clamp(0, 100);
+          final double value = indoorScore / 100.0;
+
+          const Color leftColor = Color(0xFF6F8DCD);
+          const Color rightColor = Color(0xFFEA9892);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -321,7 +330,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 if (preferences.favoriteCategories.isEmpty)
-                  const Text("No tienes categorías favoritas aún", style: TextStyle(color: Colors.grey))
+                  const Text("No likes", style: TextStyle(color: Colors.grey))
                 else
                   Wrap(
                     spacing: 8,
@@ -337,6 +346,101 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
 
                 const SizedBox(height: 30),
+
+                // ---------------------- Indoor vs Outdoor ----------------------
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Indoor vs Outdoor",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "$indoorScore%",
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8.0),
+                      child: Text("Indoor", style: TextStyle(fontSize: 12)),
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 34,
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            Container(
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: value,
+                              child: Container(
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [leftColor, rightColor],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment(value * 2 - 1, 0),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.12),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    value < 0.5 ? Icons.home_outlined : Icons.park,
+                                    size: 16,
+                                    color: value < 0.5 ? leftColor : rightColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8.0),
+                      child: Text("Outdoor", style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  value < 0.4
+                      ? "You tend to prefer indoor activities"
+                      : value > 0.6
+                      ? "You tend to prefer outdoor activities"
+                      : "You like a mix of indoor and outdoor activities",
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+
+                const SizedBox(height: 30),
                 const Divider(color: Colors.grey, thickness: 1),
                 const SizedBox(height: 30),
 
@@ -347,7 +451,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: const Text("Change your profile information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
                 const SizedBox(height: 10),
-
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFED6275), minimumSize: const Size(double.infinity, 40)),
                   onPressed: authViewModel.isLoading
@@ -364,7 +467,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(height: 10),
-
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA9892), minimumSize: const Size(double.infinity, 40)),
                   onPressed: () => _showDeleteAccountDialog(context, profileViewModel, authViewModel),
@@ -399,4 +501,5 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
+
 
