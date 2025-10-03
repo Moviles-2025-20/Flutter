@@ -61,11 +61,12 @@ class _ProfileSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 35,
-          backgroundImage: AssetImage(profileImagePath),
-          backgroundColor: Colors.white,
-        ),
+       CircleAvatar(
+        radius: 25,
+        backgroundImage: profileImagePath != null
+            ? NetworkImage(profileImagePath)
+            : AssetImage('assets/images/default_profile.png') as ImageProvider,
+      ),
         SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
