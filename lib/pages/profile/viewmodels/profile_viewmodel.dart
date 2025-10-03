@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../util/firebase_service.dart';
 import '../models/user_model.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
@@ -143,18 +145,28 @@ class ProfileViewModel extends ChangeNotifier {
 
 
   /// Actualizar foto de perfil
-  Future<void> updatePhoto(String photoUrl) async {
+  Future<void> updatePhoto(String localPath) async {
     if (_currentUser == null) return;
 
     _isLoading = true;
     notifyListeners();
 
     try {
+      // Subir archivo a Firebase Storage
+      File file = File(localPath);
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users/${_currentUser!.uid}/profile.jpg');
+      await ref.putFile(file);
+
+      // Obtener URL de descarga
+      String downloadUrl = await ref.getDownloadURL();
+
       await _firestore
           .collection('users')
           .doc(_currentUser!.uid)
           .update({
-        'profile.photo': photoUrl,
+        'profile.photo': downloadUrl,
       });
 
       await loadUserData(); // Recargar datos
