@@ -14,6 +14,8 @@ class RegisterViewModel extends ChangeNotifier {
   List<Map<String, String>> freeTimeSlots = []; // [{start, end}]
   List<String> favoriteCategories = [];
 
+  int indoorOutdoorScore = 50;
+
   void toggleCategory(String category) {
     if (favoriteCategories.contains(category)) {
       favoriteCategories.remove(category);
@@ -54,6 +56,7 @@ class RegisterViewModel extends ChangeNotifier {
 
 
 
+
     await _db.collection("users").doc(uid).set({
       "profile": {
         "name": name,
@@ -67,10 +70,11 @@ class RegisterViewModel extends ChangeNotifier {
       },
       "preferences": {
         "favorite_categories": favoriteCategories,
+        "indoor_outdoor_score": indoorOutdoorScore,
         "notifications": {
           "free_time_slots": freeTimeSlots,
         },
-      }
+      },
     }, SetOptions(merge: true));
   }
 }
