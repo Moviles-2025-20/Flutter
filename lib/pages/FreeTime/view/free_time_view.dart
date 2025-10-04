@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/notification.dart';
 import 'package:intl/intl.dart';
 import 'package:app_flutter/pages/events/model/event.dart' as EventsModel;
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 
-import '../../detailEvent.dart';
 
 
 
@@ -167,34 +167,42 @@ class EventCard extends StatelessWidget {
       onTap: () async {
         final viewModel = context.read<FreeTimeViewModel>();
 
-        // Mostrar diálogo de carga
+        // Abrir diálogo de carga y obtener el BuildContext correcto
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (_) => const Center(child: CircularProgressIndicator()),
+          builder: (dialogContext) {
+            // Guardamos el context del diálogo para poder cerrarlo después
+            return const Center(child: CircularProgressIndicator());
+          },
         );
 
-        final fetchedEvent = await viewModel.getEventById(event.id);
+        try {
+          final fetchedEvent = await viewModel.getEventById(event.id);
 
-        // Cerrar diálogo de carga
-        Navigator.of(context).pop();
+          // Cerrar diálogo de carga
+          Navigator.of(context, rootNavigator: true).pop();
 
-        if (fetchedEvent != null) {
-          // IMPORTANTE: DetailEvent debe aceptar el tipo EventsModel.Event
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailEvent(),
-            ),
-          );
-        } else {
+          if (fetchedEvent != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DetailEvent(event: fetchedEvent),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Event not found")),
+            );
+          }
+        } catch (e) {
+          // En caso de error, cerrar diálogo y mostrar mensaje
+          Navigator.of(context, rootNavigator: true).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Event not found")),
+            SnackBar(content: Text("Error loading event: $e")),
           );
         }
       },
-
-
       child: Card(
         margin: const EdgeInsets.only(bottom: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -202,7 +210,6 @@ class EventCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen superior
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
@@ -220,7 +227,6 @@ class EventCard extends StatelessWidget {
                 },
               ),
             ),
-            // Información del evento
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
@@ -257,12 +263,11 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.access_time,
-                          size: 16, color: Colors.grey),
+                      const Icon(Icons.access_time, size: 16, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
-                        "${event.startTime.hour}:${event.startTime.minute.toString().padLeft(2, '0')} - "
-                            "${event.endTime.hour}:${event.endTime.minute.toString().padLeft(2, '0')}",
+                        "${event.startTime.hour.toString().padLeft(2,'0')}:${event.startTime.minute.toString().padLeft(2,'0')} - "
+                            "${event.endTime.hour.toString().padLeft(2,'0')}:${event.endTime.minute.toString().padLeft(2,'0')}",
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -270,8 +275,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.category,
-                          size: 16, color: Colors.grey),
+                      const Icon(Icons.category, size: 16, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
                         event.category,
@@ -288,3 +292,4 @@ class EventCard extends StatelessWidget {
     );
   }
 }
+

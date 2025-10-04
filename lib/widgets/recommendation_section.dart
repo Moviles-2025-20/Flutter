@@ -1,5 +1,5 @@
 import 'package:app_flutter/pages/FreeTime/viewmodel/free_time_viewmodel.dart';
-import 'package:app_flutter/pages/detailEvent.dart';
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -91,7 +91,7 @@ class RecommendationsSection extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => DetailEvent(),
+                                  builder: (context) => DetailEvent( event : event),
                                 ),
                               );
                             },
