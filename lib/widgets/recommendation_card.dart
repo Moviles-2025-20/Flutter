@@ -5,10 +5,10 @@ class RecommendationCard extends StatelessWidget {
   final String description;
   final String imagePath;
   final String? time;
+  final String? day;
   final String? duration;
   final String? location;
   final Color tagColor;
-  final bool showLocationInfo;
   final VoidCallback onTap;
 
   const RecommendationCard({
@@ -17,55 +17,88 @@ class RecommendationCard extends StatelessWidget {
     required this.description,
     required this.imagePath,
     this.time,
+    this.day,
     this.duration,
     this.location,
     required this.tagColor,
-    this.showLocationInfo = false,
     required this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final imageProvider = imagePath.startsWith('http')
+        ? NetworkImage(imagePath)
+        : AssetImage(imagePath) as ImageProvider;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 5,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Barra superior con título
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: tagColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
 
             SizedBox(
-              height: 150, 
+              height: 150,
               child: Row(
                 children: [
-                  // Imagen - 35% del ancho
+                  // Imagen - 35%
                   Expanded(
                     flex: 35,
-                    child: _CardImage(
-                      imagePath: imagePath,
-                      title: title,
-                      tagColor: tagColor,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                        ),
+                        image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
-                  // Contenido - 65% del ancho
+                  // Contenido - 65%
                   Expanded(
                     flex: 65,
                     child: _CardContent(
                       description: description,
                       time: time,
+                      day: day,
                       duration: duration,
                       location: location,
-                      showLocationInfo: showLocationInfo,
                     ),
                   ),
                 ],
@@ -78,184 +111,96 @@ class RecommendationCard extends StatelessWidget {
   }
 }
 
-class _CardImage extends StatelessWidget {
-  final String imagePath;
-  final String title;
-  final Color tagColor;
-
-  const _CardImage({
-    required this.imagePath,
-    required this.title,
-    required this.tagColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(12),
-          bottomLeft: Radius.circular(12),
-        ),
-        image: DecorationImage(
-          image: AssetImage(imagePath),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Tag posicionado en la esquina superior izquierda
-          Positioned(
-            top: 8,
-            left: 4,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: tagColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CardContent extends StatelessWidget {
   final String description;
   final String? time;
+  final String? day;
   final String? duration;
   final String? location;
-  final bool showLocationInfo;
 
   const _CardContent({
     required this.description,
     this.time,
+    this.day,
     this.duration,
     this.location,
-    required this.showLocationInfo,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Descripción en la parte superior
-          Expanded(
-            child: Text(
-              description,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.black,
-                height: 1.3,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          // Descripción
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Colors.black,
+              height: 1.3,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
-          
-          // Información de tiempo/ubicación en la parte inferior
-          if (showLocationInfo)
-            _LocationInfoHorizontal(location: location, time: time)
-          else if (time != null)
-            _TimeInfo(time: time!, duration: duration),
+
+          const SizedBox(height: 8),
+
+          // Ubicación debajo de la descripción
+          if (location != null)
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    location!,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+
+          const SizedBox(height: 8),
+
+          // Día, hora y duración usando Wrap para evitar overflow
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              if (day != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(day!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+              if (time != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(time!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+              if (duration != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.schedule, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(duration!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
-
-class _TimeInfo extends StatelessWidget {
-  final String time;
-  final String? duration;
-
-  const _TimeInfo({required this.time, this.duration});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.access_time, size: 14, color: Colors.grey[800]),
-            SizedBox(width: 4),
-            Text(
-              time,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[800],
-              ),
-            ),
-          ],
-        ),
-        if (duration != null) ...[
-          SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.schedule, size: 14, color: Colors.grey[800]),
-              SizedBox(width: 4),
-              Text(
-                duration!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _LocationInfoHorizontal extends StatelessWidget {
-  final String? location;
-  final String? time;
-
-  const _LocationInfoHorizontal({this.location, this.time});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.location_on, size: 14, color: Colors.grey[800]),
-        SizedBox(width: 4),
-        if (location != null)
-          Text(
-            location!,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[800],
-            ),
-          ),
-        if (location != null && time != null) 
-          Text(" • ", style: TextStyle(color: Colors.grey[800])),
-        if (time != null)
-          Text(
-            time!,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[800],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
