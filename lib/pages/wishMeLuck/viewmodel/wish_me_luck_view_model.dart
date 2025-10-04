@@ -1,4 +1,5 @@
 
+import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
 import 'package:app_flutter/util/wish_me_luck_service.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +9,13 @@ class WishMeLuckViewModel extends ChangeNotifier {
   final WishMeLuckService _service = WishMeLuckService();
 
   WishMeLuckEvent? _currentEvent;
+  Event? _currentEventDetail;
   bool _isLoading = false;
   String? _error;
   int lastWishedTime = -1;
 
   WishMeLuckEvent? get currentEvent => _currentEvent;
+  Event? get currentEventDetail => _currentEventDetail;
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get lastWished => lastWishedTime;
@@ -41,8 +44,13 @@ class WishMeLuckViewModel extends ChangeNotifier {
     try {
       // Simular shake/animation delay
       await Future.delayed(const Duration(milliseconds: 1500));
-      
+
       _currentEvent = await _service.getWishMeLuckEvent();
+      print(_currentEvent);
+      _currentEventDetail = await _service.getWishMeLuckEventDetail(_currentEvent!.id);
+      print(_currentEventDetail);
+      
+      
       _error = null;
     } catch (e) {
       _error = 'Error al obtener evento: $e';
@@ -66,7 +74,7 @@ class WishMeLuckViewModel extends ChangeNotifier {
     } else {
       final difference = now.difference(lastWishedDate).inDays;
       lastWishedTime = difference;
-      notifyListeners(); // si estás en un ViewModel extendiendo ChangeNotifier
+      notifyListeners(); 
     }
 
     return lastWishedTime;

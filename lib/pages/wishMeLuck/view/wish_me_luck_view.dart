@@ -185,7 +185,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                 if (viewModel.currentEvent != null) const SizedBox(height: 20),
 
                 if (viewModel.currentEvent != null)
-                  EventPreviewCard(event: viewModel.currentEvent!)
+                  EventPreviewCard(event: viewModel.currentEvent!, eventDetail: viewModel.currentEventDetail!)
                 else
                   const EmptyState(),
 
