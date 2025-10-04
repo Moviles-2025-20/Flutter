@@ -1,3 +1,4 @@
+import 'package:app_flutter/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -273,7 +274,10 @@ class _LoginState extends State<Login> {
                         arguments: viewModel.user!.uid,
                       );
                     } else {
-                      Navigator.pushReplacementNamed(context, '/home');
+                       final mainPageState =
+                            context.findAncestorStateOfType<MainPageState>();
+                      mainPageState?.selectTab(0);
+                      Navigator.of(context).pushReplacementNamed('/home');
                     }
                   },
                   child: const Text(

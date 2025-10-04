@@ -96,17 +96,31 @@ class MainPageState extends State<MainPage> {
     const ProfilePage(),
   ];
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index , {Map<String, dynamic>? arguments}) {
     setState(() {
       _selectedIndex = index;
     });
+    if (arguments == null && index == 1) {
+      _navigatorKeys[index].currentState?.pushReplacementNamed(
+        '/',
+        arguments: false,
+      );
+    }
   }
 
-  void selectTab(int index) {
-      setState(() {
-        _selectedIndex = index;
-      });
+  void selectTab(int index, {Map<String, dynamic>? arguments}) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    
+    // Si hay argumentos y es el tab de eventos (1), navegar con argumentos
+    if (arguments != null && index == 1) {
+      _navigatorKeys[index].currentState?.pushReplacementNamed(
+        '/',
+        arguments: arguments,
+      );
     }
+  }
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
   List<GlobalKey<NavigatorState>> get navigatorKeys => _navigatorKeys;
@@ -149,8 +163,10 @@ class MainPageState extends State<MainPage> {
           Navigator(
             key: _navigatorKeys[1],
             onGenerateRoute: (settings) {
+              final args = settings.arguments as Map<String, dynamic>?;
+              final startWithMap = args?['startWithMapView'] as bool? ?? false;
               return MaterialPageRoute(
-                builder: (_) => EventsMapListView(),
+                builder: (_) => EventsMapListView(startWithMapView: startWithMap),
               );
             },
           ),

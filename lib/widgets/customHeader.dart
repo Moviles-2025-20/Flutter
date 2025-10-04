@@ -39,8 +39,6 @@ class CustomHeader extends StatelessWidget {
             ],
           ),
           SizedBox(height: 20),
-          // Search Bar
-          _SearchBar(onSubmitted: onSearchSubmitted),
         ],
       ),
     );

@@ -1,13 +1,17 @@
-import 'package:app_flutter/pages/events/model/event.dart';
+import 'package:app_flutter/widgets/list_events/events_map_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+import 'package:app_flutter/pages/events/model/event.dart';
+import 'package:app_flutter/pages/events/viewmodel/events_map_viewmodel.dart';
 
 class EventsMapView extends StatefulWidget {
   final List<Event> events;
-  const EventsMapView({Key? key, required this.events}) : super(key: key);
   
-
+  const EventsMapView({
+    Key? key,
+    required this.events,
+  }) : super(key: key);
 
   @override
   State<EventsMapView> createState() => _EventsMapViewState();
@@ -15,166 +19,153 @@ class EventsMapView extends StatefulWidget {
 
 class _EventsMapViewState extends State<EventsMapView> {
   GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
-  // USER LOCATION
-  LatLng? _userPosition;
-  List<Event> _sortedEvents = [];
-  final int limit = 3; 
-
+  late EventsMapViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _determinePosition();
-    _createMarkers();
-    
+    _viewModel = EventsMapViewModel();
+    _viewModel.setEvents(widget.events);
+    _viewModel.initializeLocation();
   }
 
   @override
   void didUpdateWidget(EventsMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.events != widget.events) {
-      _createMarkers();
+      _viewModel.setEvents(widget.events);
     }
   }
 
-void _createMarkers() {
+  
+  void _showNearbyEventsBottomSheet() {
+    final nearbyEvents = _viewModel.getNearbyEvents();
     
-    List<Event> eventsToShow =
-        _sortedEvents.isNotEmpty ? _sortedEvents : widget.events;
-
-    _markers = eventsToShow.map((event) {
-      if (event.location.coordinates.length < 2) return null;
-
-      final lat = event.location.coordinates[0];
-      final lng = event.location.coordinates[1];
-      if (lat == 0 && lng == 0) return null;
-
-      double? distanceKm;
-      if (_userPosition != null) {
-        distanceKm = Geolocator.distanceBetween(
-          _userPosition!.latitude,
-          _userPosition!.longitude,
-          lat,
-          lng,
-        ) /
-            1000;
-      }
-
-      return Marker(
-        markerId: MarkerId(event.name),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(
-          title: event.name,
-          snippet: distanceKm != null
-              ? '${event.location.city} - ${distanceKm.toStringAsFixed(1)} km'
-              : event.location.city,
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          event.isPositive ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed,
+    if (nearbyEvents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay eventos cercanos disponibles'),
+          duration: Duration(seconds: 2),
         ),
       );
-    }).whereType<Marker>().toSet();
-
-    // USER LOCATION
-    if (_userPosition != null) {
-      _markers.add(
-        Marker(
-          markerId: const MarkerId("user_location"),
-          position: _userPosition!,
-          infoWindow: const InfoWindow(title: "You are here"),
-          icon:
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        ),
-      );
-    }
-
-    if (mounted) setState(() {});
-  }
-
-
-  Future<void> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // GPS active
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-
-    if (permission == LocationPermission.deniedForever) {
       return;
     }
 
-    // Get current location
-    final position = await Geolocator.getCurrentPosition().catchError((e) {
-      print("Error al obtener ubicación: $e");
-      return null;
-    });
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor:  Colors.transparent,
+      builder: (context) => NearbyEventsBottomSheet(
+        events: nearbyEvents,
+        userPosition: _viewModel.userPosition,
+        onEventTap: (event) {
+          Navigator.pop(context);
+          _animateToEvent(event);
+        },
+      ),
+    );
+  }
 
-    if (position != null) {
-      setState(() {
-        _userPosition = LatLng(position.latitude, position.longitude);
-        //USER DISTANCE SORT - THIS MAKE TO SELECT THE NEAREST EVENTS
-        _sortedEvents = List.from(widget.events);
-        _sortedEvents.sort((a, b) {
-          final aDist = Geolocator.distanceBetween(
-            _userPosition!.latitude,
-            _userPosition!.longitude,
-            a.location.coordinates[0],
-            a.location.coordinates[1],
-          );
-          final bDist = Geolocator.distanceBetween(
-            _userPosition!.latitude,
-            _userPosition!.longitude,
-            b.location.coordinates[0],
-            b.location.coordinates[1],
-          );
-          return aDist.compareTo(bDist);
-        });
-
-        if (limit != null && limit > 0 && _sortedEvents.length > limit) {
-          _sortedEvents = _sortedEvents.sublist(0, limit);
-        }
-
-        _createMarkers();
-      });
+  void _animateToEvent(Event event) {
+    if (_mapController != null && event.location.coordinates.length >= 2) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(
+              event.location.coordinates[0],
+              event.location.coordinates[1],
+            ),
+            zoom: 15,
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calcular centro del mapa
-    final LatLng center = _userPosition ??
-        (widget.events.isNotEmpty
-            ? LatLng(
-                widget.events.first.location.coordinates[0],
-                widget.events.first.location.coordinates[1],
-              )
-            : const LatLng(4.7110, -74.0721)); // Bogotá por defecto
-
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: center,
-        zoom: 12,
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Consumer<EventsMapViewModel>(
+        builder: (context, viewModel, child) {
+          return Scaffold(
+            body: Stack(
+              children: [
+                // Map
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: viewModel.mapCenter,
+                    zoom: 12,
+                  ),
+                  markers: viewModel.markers,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  myLocationButtonEnabled: true,
+                  myLocationEnabled: true,
+                ),
+                
+                // Loading indicator
+                if (viewModel.isLoading)
+                  Container(
+                    color: Colors.black26,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                
+                // Error message
+                if (viewModel.errorMessage != null)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                viewModel.errorMessage!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Floating Action Button
+            floatingActionButton: viewModel.userPosition != null
+                ? FloatingActionButton.extended(
+                    onPressed: _showNearbyEventsBottomSheet,
+                    icon: const Icon(Icons.near_me, color: Colors.white),
+                    label: const Text('Eventos cercanos', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    backgroundColor: Colors.pink.shade400,
+                  )
+                : null,
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          );
+        },
       ),
-      markers: _markers,
-      onMapCreated: (controller) {
-        _mapController = controller;
-      },
-      myLocationButtonEnabled: true,
-      myLocationEnabled: true,
     );
   }
 
   @override
   void dispose() {
     _mapController?.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 }
