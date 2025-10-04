@@ -84,6 +84,17 @@ class AnalyticsService {
     );
   }
 
+  Future<void> logCheckIn(String activityId, String category) async {
+    await _analytics.logEvent(
+      name: 'activity_check_in',
+      parameters: {
+        'activity_id': activityId,
+        'category': category,
+      },
+    );
+  }
+
+
   // Observer para navigation
   FirebaseAnalyticsObserver getAnalyticsObserver() {
     return FirebaseAnalyticsObserver(analytics: _analytics);
