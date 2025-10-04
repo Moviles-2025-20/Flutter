@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 
+import '../FreeTime/view/free_time_view.dart';
+
 class Home extends StatelessWidget {
   const Home({super.key});
 
@@ -67,8 +69,18 @@ class Home extends StatelessWidget {
                             switch (cardType) {
                               case CardType.weeklyChallenge:
                                 break;
-                              case CardType.personalityQuiz:
+                              case CardType.FreeTimeEvents:
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FreeTimeView(userId: user.uid),
+                                    ),
+                                  );
+                                }
                                 break;
+
                               case CardType.wishMeLuck:
                                 mainPageState?.selectTab(2);
                                 break;
