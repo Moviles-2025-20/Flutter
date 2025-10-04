@@ -72,13 +72,7 @@ class EventsViewModel extends ChangeNotifier {
   }
 
   void updateCategory(String? category) {
-    print(category);
-    if (category == null || category.isEmpty) {
-      _filters = _filters.copyWith(category: "");
-    } else {
-      _filters = _filters.copyWith(category: category);
-    }
-
+    _filters = _filters.copyWith(category: category);
     loadEvents();
   }
 

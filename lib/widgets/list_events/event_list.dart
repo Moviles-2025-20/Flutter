@@ -1,4 +1,4 @@
-import 'package:app_flutter/pages/detailEvent.dart';
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
 import 'package:app_flutter/util/analytics_service.dart';
@@ -90,7 +90,7 @@ class EventCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const DetailEvent(),
+            builder: (context) => DetailEvent(event: event),
           ),
         );
       },

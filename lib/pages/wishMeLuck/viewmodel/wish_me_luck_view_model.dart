@@ -1,4 +1,5 @@
 
+import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
 import 'package:app_flutter/util/wish_me_luck_service.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +9,16 @@ class WishMeLuckViewModel extends ChangeNotifier {
   final WishMeLuckService _service = WishMeLuckService();
 
   WishMeLuckEvent? _currentEvent;
+  Event? _currentEventDetail;
   bool _isLoading = false;
   String? _error;
-  int lastWishedTime = -1;
+  int _lastWishedTime = -1;
 
   WishMeLuckEvent? get currentEvent => _currentEvent;
+  Event? get currentEventDetail => _currentEventDetail;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  int get lastWished => lastWishedTime;
+  int get lastWished => _lastWishedTime;
 
   // Message
   String getMotivationalMessage() {
@@ -42,7 +45,13 @@ class WishMeLuckViewModel extends ChangeNotifier {
       // Simular shake/animation delay
       await Future.delayed(const Duration(milliseconds: 1500));
 
+
       _currentEvent = await _service.getWishMeLuckEvent();
+      _currentEventDetail = await _service.getWishMeLuckEventDetail(_currentEvent!.id);
+      await _service.setLastWishedDate(DateTime.now());
+      await calculateDaysSinceLastWished();
+      
+      
       _error = null;
     } catch (e) {
       _error = 'Error al obtener evento: $e';
@@ -55,23 +64,21 @@ class WishMeLuckViewModel extends ChangeNotifier {
     }
   }
 
-  Future<int> calculateDaysSinceLastWished() async {
+  Future<void> calculateDaysSinceLastWished() async {
     final now = DateTime.now();
     final DateTime? lastWishedDate = await _service.getLastWishedDate();
 
-    int lastWishedTime = 0;
 
     if (lastWishedDate == null) {
       // Nunca se ha deseado suerte antes
       await _service.setLastWishedDate(now);
-      lastWishedTime = 0;
+      _lastWishedTime = 0;
     } else {
       final difference = now.difference(lastWishedDate).inDays;
-      lastWishedTime = difference;
-      notifyListeners();
+      _lastWishedTime = difference;
+      notifyListeners(); 
     }
 
-    return lastWishedTime;
   }
 
   void clearEvent() {

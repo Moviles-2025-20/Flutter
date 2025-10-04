@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/comment.dart';
 import 'package:app_flutter/util/comment_service.dart';
+import 'package:app_flutter/util/user_activity_service.dart';
 import 'package:app_flutter/pages/events/view/make_comment_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DetailEvent extends StatefulWidget {
   final Event event;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  const DetailEvent({super.key, required this.event});
+  DetailEvent({super.key, required this.event});
+  
 
   @override
   State<DetailEvent> createState() => _DetailEventState();
@@ -16,11 +20,27 @@ class DetailEvent extends StatefulWidget {
 class _DetailEventState extends State<DetailEvent> {
   final CommentService _commentService = CommentService();
   late Future<List<Comment>> _commentsFuture;
+  final UserActivityService _userActivityService = UserActivityService();
+  bool _isCheckedIn = false;
 
   @override
   void initState() {
     super.initState();
     _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+    _loadCheckIn();
+  }
+
+  void _loadCheckIn() async {
+    final userId = widget._auth.currentUser?.uid;
+    final existing = await _userActivityService.getCheckIn(userId!, widget.event.id);
+    setState(() {
+      _isCheckedIn = existing != null;
+    });
+  }
+
+    void _toggleCheckIn() async {
+    await _userActivityService.toggleCheckIn(widget.event.id, widget.event.category);
+    _loadCheckIn();
   }
 
   void _refreshComments() {
@@ -36,9 +56,10 @@ class _DetailEventState extends State<DetailEvent> {
       appBar: AppBar(
         title: const Text(
           "Event Details",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF6389E2),
         actions: const [
           Icon(Icons.notifications_none),
           SizedBox(width: 16),
@@ -55,24 +76,44 @@ class _DetailEventState extends State<DetailEvent> {
             const SizedBox(height: 16),
 
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MakeCommentPage(eventId: widget.event.id),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MakeCommentPage(eventId: widget.event.id),
+                          
+                        ),
+                      );
+                    },
+                    child: const Text("Make a Comment"),
                   ),
-                );
-                _refreshComments();
-              },
-              child: const Text("Make a Comment"),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isCheckedIn ? Colors.green : Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      _toggleCheckIn();
+                    },
+                    child: const Text("Check In"),
+                  ),
+                ),
+              ],
             ),
 
             const Divider(),
@@ -147,18 +188,39 @@ class _DetailEventState extends State<DetailEvent> {
                   backgroundColor: Colors.orangeAccent,
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16, // espacio horizontal entre elementos
+                  runSpacing: 4, // espacio vertical entre líneas si hace wrap
                   children: [
-                    const Icon(Icons.place_outlined, size: 16),
-                    const SizedBox(width: 4),
-                    Text(widget.event.location.address),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.access_time, size: 16),
-                    const SizedBox(width: 4),
-                    Text(widget.event.schedule.times.isNotEmpty
-                        ? widget.event.schedule.times.first
-                        : ""),
-                  ],
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.place_outlined, size: 16),
+                        SizedBox(width: 4),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 200, // ancho máximo para el texto antes de hacer wrap
+                      child: Text(
+                        widget.event.location.address,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.access_time, size: 16),
+                        SizedBox(width: 4),
+                      ],
+                    ),
+                    Text(
+                      widget.event.schedule.times.isNotEmpty
+                          ? widget.event.schedule.times.first
+                          : "",
+                    ),
+                  ]
                 ),
                 const SizedBox(height: 8),
                 Text(

@@ -10,6 +10,7 @@ import 'package:app_flutter/util/auth_service.dart';
 import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -50,6 +51,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileViewModel(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CommentViewModel(),
         ),
       ],
       child: MaterialApp(
