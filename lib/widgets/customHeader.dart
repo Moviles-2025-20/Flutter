@@ -38,9 +38,7 @@ class CustomHeader extends StatelessWidget {
               _NotificationButton(onTap: onNotificationTap),
             ],
           ),
-          SizedBox(height: 20),
-          // Search Bar
-          _SearchBar(onSubmitted: onSearchSubmitted),
+          SizedBox(height: 5),
         ],
       ),
     );

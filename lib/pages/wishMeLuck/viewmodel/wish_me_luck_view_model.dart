@@ -12,13 +12,13 @@ class WishMeLuckViewModel extends ChangeNotifier {
   Event? _currentEventDetail;
   bool _isLoading = false;
   String? _error;
-  int lastWishedTime = -1;
+  int _lastWishedTime = -1;
 
   WishMeLuckEvent? get currentEvent => _currentEvent;
   Event? get currentEventDetail => _currentEventDetail;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  int get lastWished => lastWishedTime;
+  int get lastWished => _lastWishedTime;
 
   // Message
   String getMotivationalMessage() {
@@ -46,9 +46,9 @@ class WishMeLuckViewModel extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 1500));
 
       _currentEvent = await _service.getWishMeLuckEvent();
-      print(_currentEvent);
       _currentEventDetail = await _service.getWishMeLuckEventDetail(_currentEvent!.id);
-      print(_currentEventDetail);
+      await _service.setLastWishedDate(DateTime.now());
+      await calculateDaysSinceLastWished();
       
       
       _error = null;
@@ -61,23 +61,21 @@ class WishMeLuckViewModel extends ChangeNotifier {
     }
   }
 
-  Future<int> calculateDaysSinceLastWished() async {
+  Future<void> calculateDaysSinceLastWished() async {
     final now = DateTime.now();
     final DateTime? lastWishedDate = await _service.getLastWishedDate();
 
-    int lastWishedTime = 0;
 
     if (lastWishedDate == null) {
       // Nunca se ha deseado suerte antes
       await _service.setLastWishedDate(now);
-      lastWishedTime = 0;
+      _lastWishedTime = 0;
     } else {
       final difference = now.difference(lastWishedDate).inDays;
-      lastWishedTime = difference;
+      _lastWishedTime = difference;
       notifyListeners(); 
     }
 
-    return lastWishedTime;
   }
 
   void clearEvent() {

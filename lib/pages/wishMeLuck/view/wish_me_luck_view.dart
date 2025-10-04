@@ -38,7 +38,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   late Animation<double> _shakeAnimation;
   int lastWishedTime = 0; // inicializamos con 0
 
-  final WishMeLuckViewModel _viewModel = WishMeLuckViewModel();
 
   // Variables para el acelerómetro
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
@@ -62,14 +61,14 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     );
 
     // Cargamos la variable asincrónica
-    _loadLastWishedTime();
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<WishMeLuckViewModel>();
+      viewModel.calculateDaysSinceLastWished();
+    });
+
     _initAccelerometer();
   }
 
-  Future<void> _loadLastWishedTime() async {
-    lastWishedTime = await _viewModel.calculateDaysSinceLastWished();
-    setState(() {}); // refresca la UI para que HeaderSectionWML reciba el valor
-  }
 
   void _initAccelerometer() {
     // The sensors_plus package is constantly updated, so we use the event stream to get real-time data of the accelerometer
@@ -169,7 +168,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
               children: [
                 // Enviamos la variable al Header
                 HeaderSectionWML(
-                  lastWished: lastWishedTime,
+                  lastWished: viewModel.lastWished,
                 ),
                 const SizedBox(height: 20),
 
