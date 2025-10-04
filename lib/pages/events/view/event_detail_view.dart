@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/comment.dart';
 import 'package:app_flutter/util/comment_service.dart';
+import 'package:app_flutter/util/user_activity_service.dart';
 import 'package:app_flutter/pages/events/view/make_comment_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DetailEvent extends StatefulWidget {
   final Event event;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  const DetailEvent({super.key, required this.event});
+  DetailEvent({super.key, required this.event});
+  
 
   @override
   State<DetailEvent> createState() => _DetailEventState();
@@ -16,11 +20,27 @@ class DetailEvent extends StatefulWidget {
 class _DetailEventState extends State<DetailEvent> {
   final CommentService _commentService = CommentService();
   late Future<List<Comment>> _commentsFuture;
+  final UserActivityService _userActivityService = UserActivityService();
+  bool _isCheckedIn = false;
 
   @override
   void initState() {
     super.initState();
     _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+    _loadCheckIn();
+  }
+
+  void _loadCheckIn() async {
+    final userId = widget._auth.currentUser?.uid;
+    final existing = await _userActivityService.getCheckIn(userId!, widget.event.id);
+    setState(() {
+      _isCheckedIn = existing != null;
+    });
+  }
+
+    void _toggleCheckIn() async {
+    await _userActivityService.toggleCheckIn(widget.event.id);
+    _loadCheckIn();
   }
 
   void _refreshComments() {
@@ -55,42 +75,44 @@ class _DetailEventState extends State<DetailEvent> {
             const SizedBox(height: 16),
 
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MakeCommentPage(eventId: widget.event.id),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MakeCommentPage(eventId: widget.event.id),
+                          
+                        ),
+                      );
+                    },
+                    child: const Text("Make a Comment"),
                   ),
-                );
-                _refreshComments();
-              },
-              child: const Text("Make a Comment"),
-            ),
-
-            // Asisted check-in button
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              onPressed: () {
-                // Implement check-in logic here
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Checked in successfully!")),
-                );
-              },
-              child: const Text("Check In"),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isCheckedIn ? Colors.green : Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      _toggleCheckIn();
+                    },
+                    child: const Text("Check In"),
+                  ),
+                ),
+              ],
             ),
 
             const Divider(),
