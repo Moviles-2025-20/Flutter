@@ -1,5 +1,6 @@
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
+import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_stats_view.dart';
 import 'package:app_flutter/pages/login/views/login.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -446,7 +447,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // ---------------------- Botones ----------------------
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xEA1266B6), minimumSize: const Size(double.infinity, 40)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(234, 119, 134, 148), minimumSize: const Size(double.infinity, 40)),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const wishMeLuckStatsView())),
+                  child: const Text("Results of the weekly challenge", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(234, 119, 134, 148), minimumSize: const Size(double.infinity, 40)),
                   onPressed: () => _showEditProfileDialog(context, profileViewModel),
                   child: const Text("Change your profile information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),

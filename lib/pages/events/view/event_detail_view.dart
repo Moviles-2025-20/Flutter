@@ -75,6 +75,24 @@ class _DetailEventState extends State<DetailEvent> {
               child: const Text("Make a Comment"),
             ),
 
+            // Asisted check-in button
+            const SizedBox(height: 16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Implement check-in logic here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Checked in successfully!")),
+                );
+              },
+              child: const Text("Check In"),
+            ),
+
             const Divider(),
             _buildRatingSection(),
 
