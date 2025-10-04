@@ -67,7 +67,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     });
 
     _initAccelerometer();
-    
+
   }
 
   void _initAccelerometer() {
@@ -125,7 +125,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     await _triggerShake();
     await Future.delayed(const Duration(milliseconds: 1500));
     await viewModel.wishMeLuck();
-    await _loadLastWishedTime();
 
     _isShaking = false;
   }
@@ -197,7 +196,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                     _triggerShake();
                     await Future.delayed(const Duration(milliseconds: 1500));
                     await viewModel.wishMeLuck();
-                    await _loadLastWishedTime();
                   },
                 ),
                 const SizedBox(height: 20),
