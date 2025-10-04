@@ -1,12 +1,12 @@
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 class RegisterViewModel extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseService.firestore;
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  final AnalyticsService _analytics = AnalyticsService();
 
   String? name;
   String? email;
@@ -47,12 +47,7 @@ class RegisterViewModel extends ChangeNotifier {
   Future<void> saveUserData(String uid) async {
     final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
 
-    await _analytics.logEvent(
-        name: "outdoor_indoor_preference",
-        parameters: {
-          "percentage": DateTime.now().millisecondsSinceEpoch,
-        },
-      );
+    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
     
     if (name == null ||
         email == null ||

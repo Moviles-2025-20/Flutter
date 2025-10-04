@@ -50,6 +50,16 @@ class AnalyticsService {
     );
   }
 
+  //Percentage of outdoor indoor
+  Future<void> logOutdoorIndoorActivity(int indoorOutdoorScore) async {
+    await _analytics.logEvent(
+        name: "outdoor_indoor_preference",
+        parameters: {
+          "percentage": indoorOutdoorScore,
+        },
+      );
+  }
+
   // User properties
   Future<void> setUserId(String userId) async {
     await _analytics.setUserId(id: userId);
