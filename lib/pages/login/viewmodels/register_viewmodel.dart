@@ -44,6 +44,7 @@ class RegisterViewModel extends ChangeNotifier {
 
   Future<void> saveUserData(String uid) async {
     final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    
     if (name == null ||
         email == null ||
         major == null ||
