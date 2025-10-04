@@ -4,12 +4,12 @@ import 'package:app_flutter/util/event_service.dart';
 import 'package:flutter/material.dart';
 
 class EventsViewModel extends ChangeNotifier {
+  bool _isMapView;
   final EventsService _service = EventsService();
 
   List<Event> _events = [];
   bool _isLoading = false;
   String? _error;
-  bool _isMapView = false;
   EventFilters _filters = EventFilters();
   List<String> _availableCities = [];
   List<String> _availableCategories = [];
@@ -22,10 +22,12 @@ class EventsViewModel extends ChangeNotifier {
   List<String> get availableCities => _availableCities;
   List<String> get availableCategories => _availableCategories;
 
-  EventsViewModel() {
+  EventsViewModel({bool initialIsMapView = false}) 
+      : _isMapView = initialIsMapView {
     loadEvents();
     loadFilterOptions();
   }
+
 
   void toggleView() {
     _isMapView = !_isMapView;

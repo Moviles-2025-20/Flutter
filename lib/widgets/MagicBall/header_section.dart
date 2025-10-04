@@ -26,17 +26,25 @@ class HeaderSectionWML extends StatelessWidget {
             color: Colors.grey[700],
           ),
         ),
-        Column(
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
 
             if (lastWished != 0) ...[
               Text(
-                "Last time you wished luck for:$lastWished days ago",
+                "Last time you wished luck for:",
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[700],
+                ),
+              ),
+              Text(
+                " $lastWished days ago",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
               

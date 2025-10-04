@@ -47,6 +47,8 @@ dependencies:
   google_maps_flutter: ^2.5.0
   image_picker: ^0.8.7+6
   intl: ^0.18.0
+  firebase_remote_config: 6.0.2
+  geolocator: ^13.0.1
 
 dev_dependencies:
   change_app_package_name: ^1.1.0
