@@ -1,11 +1,13 @@
 import 'package:app_flutter/pages/detailEvent.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:flutter/material.dart';
 
 class EventsListView extends StatelessWidget {
   final List<Event> events;
   final EventsViewModel viewModel;
+  
 
   const EventsListView({
     Key? key,
@@ -75,13 +77,16 @@ class EventsListView extends StatelessWidget {
 
 class EventCard extends StatelessWidget {
   final Event event;
+  
 
   const EventCard({Key? key, required this.event}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final AnalyticsService _analytics = AnalyticsService();
     return InkWell(
-      onTap: () {
+      onTap: () async {
+        await _analytics.logDiscoveryMethod(DiscoveryMethod.manualBrowse);
         Navigator.push(
           context,
           MaterialPageRoute(
