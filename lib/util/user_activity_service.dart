@@ -8,6 +8,7 @@ class UserActivityService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   CollectionReference get _collection => _firestore.collection("user_activities");
+  CollectionReference get _userCollection => _firestore.collection("users");
 
 
   Future<UserActivity?> getCheckIn(String userId, String eventId) async {
@@ -52,5 +53,8 @@ class UserActivityService {
         await _collection.doc(snapshot.docs.first.id).delete();
       }
     }
+    await _userCollection.doc(user.uid).update({
+      'last_event': eventId,
+    });
   }
 }

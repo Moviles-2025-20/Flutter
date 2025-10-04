@@ -4,6 +4,8 @@ class UserModel {
   final String email;
   final String day;
   final String time;
+  final String last_event;
+
 
   UserModel({
     required this.uid,
@@ -11,6 +13,7 @@ class UserModel {
     required this.email,
     required this.day,
     required this.time,
+    this.last_event = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +23,7 @@ class UserModel {
       'email': email,
       'day': day,
       'time': time,
+      'last_event': last_event,
     };
   }
 
@@ -30,6 +34,7 @@ class UserModel {
       email: map['email'],
       day: map['day'],
       time: map['time'],
+      last_event: map['last_event'] ?? '',
     );
   }
 }
