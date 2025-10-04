@@ -1,4 +1,5 @@
 import 'package:app_flutter/firebase_options.dart';
+import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
