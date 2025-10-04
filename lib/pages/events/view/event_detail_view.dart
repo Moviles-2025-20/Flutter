@@ -56,9 +56,10 @@ class _DetailEventState extends State<DetailEvent> {
       appBar: AppBar(
         title: const Text(
           "Event Details",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF6389E2),
         actions: const [
           Icon(Icons.notifications_none),
           SizedBox(width: 16),
@@ -187,18 +188,39 @@ class _DetailEventState extends State<DetailEvent> {
                   backgroundColor: Colors.orangeAccent,
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16, // espacio horizontal entre elementos
+                  runSpacing: 4, // espacio vertical entre líneas si hace wrap
                   children: [
-                    const Icon(Icons.place_outlined, size: 16),
-                    const SizedBox(width: 4),
-                    Text(widget.event.location.address),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.access_time, size: 16),
-                    const SizedBox(width: 4),
-                    Text(widget.event.schedule.times.isNotEmpty
-                        ? widget.event.schedule.times.first
-                        : ""),
-                  ],
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.place_outlined, size: 16),
+                        SizedBox(width: 4),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 200, // ancho máximo para el texto antes de hacer wrap
+                      child: Text(
+                        widget.event.location.address,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.access_time, size: 16),
+                        SizedBox(width: 4),
+                      ],
+                    ),
+                    Text(
+                      widget.event.schedule.times.isNotEmpty
+                          ? widget.event.schedule.times.first
+                          : "",
+                    ),
+                  ]
                 ),
                 const SizedBox(height: 8),
                 Text(
