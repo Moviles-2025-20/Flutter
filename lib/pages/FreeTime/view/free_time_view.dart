@@ -2,10 +2,12 @@ import 'package:app_flutter/pages/FreeTime/model/event.dart';
 import 'package:app_flutter/pages/FreeTime/viewmodel/free_time_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:app_flutter/pages/detailEvent.dart';
 import 'package:app_flutter/pages/notification.dart';
 import 'package:intl/intl.dart';
 import 'package:app_flutter/pages/events/model/event.dart' as EventsModel;
+
+import '../../detailEvent.dart';
+
 
 
 
