@@ -17,9 +17,10 @@ class CommentService {
       }
 
       Query query = _firestore
+          .collection('events')
+          .doc(eventId)
           .collection('comments')
-          .where('event_id', isEqualTo: eventId)
-          .orderBy('created', descending: true)
+          .orderBy('createdAt', descending: true)
           .limit(100);
 
       final QuerySnapshot snapshot = await query.get();
@@ -44,13 +45,11 @@ class CommentService {
       }
 
       await _firestore.collection('comments').add({
-        'user_id': comment.user_id,
+        'userName': comment.userName,
         'event_id': comment.event_id,
-        'metadata': {
-          'image_url': comment.metadata.imageUrl,
-          'text': comment.metadata.text,
-        },
-        'created': Timestamp.fromDate(comment.created),
+        'description': comment.description,
+        'avatar': comment.avatar,
+        'createdAt': Timestamp.fromDate(comment.createdAt),
       });
     } catch (e) {
       print('Error al agregar comentario: $e');

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +40,8 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
       description: descriptionController.text,
       rating: rating,
       imageFile: _selectedImage,
+      userName: Provider.of<User>(context, listen: false).displayName ?? 'Anonymous',
+      avatar: Provider.of<User>(context, listen: false).photoURL ?? '',
     );
 
     if (!mounted) return;

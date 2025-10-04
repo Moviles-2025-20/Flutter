@@ -5,6 +5,7 @@ import 'package:app_flutter/util/comment_service.dart';
 import 'package:app_flutter/util/user_activity_service.dart';
 import 'package:app_flutter/pages/events/view/make_comment_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class DetailEvent extends StatefulWidget {
   final Event event;
@@ -27,6 +28,7 @@ class _DetailEventState extends State<DetailEvent> {
   void initState() {
     super.initState();
     _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+    print(_commentsFuture);
     _loadCheckIn();
   }
 
@@ -38,7 +40,7 @@ class _DetailEventState extends State<DetailEvent> {
     });
   }
 
-    void _toggleCheckIn() async {
+  void _toggleCheckIn() async {
     await _userActivityService.toggleCheckIn(widget.event.id);
     _loadCheckIn();
   }
@@ -70,12 +72,10 @@ class _DetailEventState extends State<DetailEvent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             _buildEventCard(),
-
             const SizedBox(height: 16),
 
-
+            // 🔸 Botones
             Row(
               children: [
                 Expanded(
@@ -91,7 +91,6 @@ class _DetailEventState extends State<DetailEvent> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => MakeCommentPage(eventId: widget.event.id),
-                          
                         ),
                       );
                     },
@@ -102,14 +101,13 @@ class _DetailEventState extends State<DetailEvent> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isCheckedIn ? Colors.green : Colors.orangeAccent,
+                      backgroundColor:
+                          _isCheckedIn ? Colors.green : Colors.orangeAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      _toggleCheckIn();
-                    },
+                    onPressed: _toggleCheckIn,
                     child: const Text("Check In"),
                   ),
                 ),
@@ -118,14 +116,16 @@ class _DetailEventState extends State<DetailEvent> {
 
             const Divider(),
             _buildRatingSection(),
-
             const SizedBox(height: 16),
             const Divider(),
 
-            const Text("Comments",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "Comments",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
 
+            // 🔸 FutureBuilder de comentarios
             FutureBuilder<List<Comment>>(
               future: _commentsFuture,
               builder: (context, snapshot) {
@@ -141,16 +141,7 @@ class _DetailEventState extends State<DetailEvent> {
 
                 final comments = snapshot.data!;
                 return Column(
-                  children: comments.map((c) {
-                    return _buildComment(
-                      c.metadata.imageUrl.isNotEmpty
-                          ? c.metadata.imageUrl
-                          : "assets/images/Perfil2.jpg", 
-                      c.user_id, 
-                      c.created.toString(),
-                      c.metadata.text,
-                    );
-                  }).toList(),
+                  children: comments.map((c) => _buildCommentCard(c)).toList(),
                 );
               },
             ),
@@ -160,6 +151,7 @@ class _DetailEventState extends State<DetailEvent> {
     );
   }
 
+  // 🟠 Tarjeta del evento
   Widget _buildEventCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -190,8 +182,8 @@ class _DetailEventState extends State<DetailEvent> {
                 const SizedBox(height: 8),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 16, // espacio horizontal entre elementos
-                  runSpacing: 4, // espacio vertical entre líneas si hace wrap
+                  spacing: 16,
+                  runSpacing: 4,
                   children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -201,7 +193,7 @@ class _DetailEventState extends State<DetailEvent> {
                       ],
                     ),
                     SizedBox(
-                      width: 200, // ancho máximo para el texto antes de hacer wrap
+                      width: 200,
                       child: Text(
                         widget.event.location.address,
                         maxLines: 3,
@@ -220,7 +212,7 @@ class _DetailEventState extends State<DetailEvent> {
                           ? widget.event.schedule.times.first
                           : "",
                     ),
-                  ]
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -235,129 +227,139 @@ class _DetailEventState extends State<DetailEvent> {
     );
   }
 
+  // 🟢 Sección de calificaciones
   Widget _buildRatingSection() {
-  final percentages = [0.40, 0.30, 0.15, 0.10, 0.05];
-  final labels = [5, 4, 3, 2, 1];
+    final percentages = [0.40, 0.30, 0.15, 0.10, 0.05];
+    final labels = [5, 4, 3, 2, 1];
 
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // 🔸 Parte izquierda (score + estrellas + reviews)
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "4.5",
-            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          const Row(
-            children: [
-              Icon(Icons.star, color: Colors.orange, size: 20),
-              Icon(Icons.star, color: Colors.orange, size: 20),
-              Icon(Icons.star, color: Colors.orange, size: 20),
-              Icon(Icons.star, color: Colors.orange, size: 20),
-              Icon(Icons.star_border, color: Colors.orange, size: 20),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text("125 reviews"),
-        ],
-      ),
-
-      const SizedBox(width: 24),
-
-
-      Expanded(
-        child: Column(
-          children: List.generate(5, (i) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  Text(labels[i].toString(),
-                      style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: LinearProgressIndicator(
-                      value: percentages[i],
-                      color: Colors.orange,
-                      backgroundColor: Colors.grey[300],
-                      minHeight: 6, // grosor de la barra
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text("${(percentages[i] * 100).toInt()}%",
-                      style: const TextStyle(fontSize: 14)),
-                ],
-              ),
-            );
-          }),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "4.5",
+              style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            const Row(
+              children: [
+                Icon(Icons.star, color: Colors.orange, size: 20),
+                Icon(Icons.star, color: Colors.orange, size: 20),
+                Icon(Icons.star, color: Colors.orange, size: 20),
+                Icon(Icons.star, color: Colors.orange, size: 20),
+                Icon(Icons.star_border, color: Colors.orange, size: 20),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text("125 reviews"),
+          ],
         ),
-      ),
-    ],
-  );
-}
-
-Widget _buildComment(
-    String avatar, String name, String date, String comment) {
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      CircleAvatar(backgroundImage: AssetImage(avatar)),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        const SizedBox(width: 24),
+        Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🔸 Encabezado naranja con nombre + fecha
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+            children: List.generate(5, (i) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Text(labels[i].toString(),
+                        style: const TextStyle(fontSize: 14)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: LinearProgressIndicator(
+                        value: percentages[i],
+                        color: Colors.orange,
+                        backgroundColor: Colors.grey[300],
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
+                    const SizedBox(width: 8),
+                    Text("${(percentages[i] * 100).toInt()}%",
+                        style: const TextStyle(fontSize: 14)),
                   ],
                 ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 💬 Tarjeta de comentario bonita
+  Widget _buildCommentCard(Comment comment) {
+    final formattedDate =
+        DateFormat('MMM d, yyyy • hh:mm a').format(comment.createdAt);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(comment.avatar.isNotEmpty
+                        ? comment.avatar
+                        : 'assets/images/avatar_placeholder.png'),
+                    radius: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    comment.userName.isNotEmpty
+                        ? "${comment.userName.substring(0, 10)}..."
+                        : "Anonymous",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 6),
-
-              // 🔸 Texto del comentario
               Text(
-                comment,
-                style: const TextStyle(color: Colors.black87),
+                formattedDate,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
-        ),
-      )
-    ],
-  );
-}
+          const SizedBox(height: 8),
+
+          Text(
+            comment.description.isNotEmpty
+                ? comment.description
+                : "No description provided.",
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+           if (comment.imageUrl!.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                comment.imageUrl!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(),
+              ),
+            ),
+
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
 }
