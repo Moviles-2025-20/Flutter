@@ -4,7 +4,9 @@ import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/auth_service.dart';
+import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -25,22 +27,21 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  final crashTracker = CrashTracker();
+  await crashTracker.initializeCrashlytics();
   
-  await RemoteConfigService().initialize();
 
+  await RemoteConfigService().initialize();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
-  static FirebaseAnalyticsObserver observer =
-      FirebaseAnalyticsObserver(analytics: analytics);
-  
-
 
   @override
   Widget build(BuildContext context) {
+    final analytics = AnalyticsService();
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -55,7 +56,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
-        navigatorObservers: [observer],
+        navigatorObservers: [analytics.getAnalyticsObserver()],
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
@@ -108,7 +109,7 @@ class MainPageState extends State<MainPage> {
     if (arguments == null && index == 1) {
       _navigatorKeys[index].currentState?.pushReplacementNamed(
         '/',
-        arguments: false,
+        arguments: {},
       );
     }
   }

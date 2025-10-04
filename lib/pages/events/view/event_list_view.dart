@@ -77,7 +77,7 @@ class EventsMapListContent extends StatelessWidget {
                   elevation: 0, 
                   highlightElevation: 0, 
                   label: const Text(
-                    "Filtros",
+                    "Filters",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Color(0xFFE3944F)),
                   ),
                 ),
