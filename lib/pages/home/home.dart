@@ -73,9 +73,10 @@ class Home extends StatelessWidget {
                                 mainPageState?.selectTab(2);
                                 break;
                               case CardType.map:
+                                mainPageState?.selectTab(1, arguments: {'startWithMapView': true});
                                 break;
                             }
-                          },
+                          }
                         ),
 
                         const SizedBox(height: 30),
