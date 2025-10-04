@@ -7,12 +7,14 @@ import 'package:flutter/material.dart' hide SearchBar;
 import 'package:provider/provider.dart';
 
 class EventsMapListView extends StatelessWidget {
-  const EventsMapListView({Key? key}) : super(key: key);
+  final bool startWithMapView;
 
+  const EventsMapListView({Key? key, this.startWithMapView = false}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => EventsViewModel(),
+      create: (_) => EventsViewModel(initialIsMapView: startWithMapView),
       child: const EventsMapListContent(),
     );
   }
@@ -75,7 +77,7 @@ class EventsMapListContent extends StatelessWidget {
                   elevation: 0, 
                   highlightElevation: 0, 
                   label: const Text(
-                    "Filtros",
+                    "Filters",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Color(0xFFE3944F)),
                   ),
                 ),

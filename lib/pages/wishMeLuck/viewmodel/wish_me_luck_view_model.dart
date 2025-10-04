@@ -45,6 +45,7 @@ class WishMeLuckViewModel extends ChangeNotifier {
       // Simular shake/animation delay
       await Future.delayed(const Duration(milliseconds: 1500));
 
+
       _currentEvent = await _service.getWishMeLuckEvent();
       _currentEventDetail = await _service.getWishMeLuckEventDetail(_currentEvent!.id);
       await _service.setLastWishedDate(DateTime.now());
@@ -56,6 +57,8 @@ class WishMeLuckViewModel extends ChangeNotifier {
       _error = 'Error al obtener evento: $e';
       _currentEvent = null;
     } finally {
+      calculateDaysSinceLastWished();
+      await _service.setLastWishedDate(DateTime.now());
       _isLoading = false;
       notifyListeners();
     }

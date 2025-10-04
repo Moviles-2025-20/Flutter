@@ -10,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 
+import '../../util/recommendation_service.dart';
+import '../../widgets/recommendation_section.dart';
+import '../FreeTime/view/free_time_view.dart';
+
 class Home extends StatelessWidget {
   const Home({super.key});
 
@@ -67,53 +71,37 @@ class Home extends StatelessWidget {
                             switch (cardType) {
                               case CardType.weeklyChallenge:
                                 break;
-                              case CardType.personalityQuiz:
+                              case CardType.FreeTimeEvents:
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FreeTimeView(userId: user.uid),
+                                    ),
+                                  );
+                                }
                                 break;
+
                               case CardType.wishMeLuck:
                                 mainPageState?.selectTab(2);
                                 break;
                               case CardType.map:
+                                mainPageState?.selectTab(1, arguments: {'startWithMapView': true});
                                 break;
                             }
-                          },
+                          }
                         ),
 
                         const SizedBox(height: 30),
 
-                        _SectionTitle(title: "Daily recommendation"),
-                        const SizedBox(height: 15),
 
-                        RecommendationCard(
-                          title: 'Festival en el Chorro',
-                          description:
-                          'Déjate llevar por la energía de la música en vivo y disfruta una noche única en el Chorro.',
-                          imagePath: 'assets/images/chorro_quevedo.png',
-                          time: 'Today • 6:00 pm',
-                          duration: '12 min',
-                          tagColor: const Color(0xFF6389E2),
-                          onTap: () {
-                            print('Festival card tapped');
-                          },
-                        ),
+                        // Carga dinámica de recomendaciones con FutureBuilder
+                        RecommendationsSection(),
+
 
                         const SizedBox(height: 30),
 
-                        _SectionTitle(title: "Close to you"),
-                        const SizedBox(height: 15),
-
-                        RecommendationCard(
-                          title: 'Obra de teatro',
-                          description:
-                          'Vive la magia del teatro con una obra que te atrapará desde el primer acto.',
-                          imagePath: 'assets/images/teatro.jpg',
-                          location: 'El bobo',
-                          time: 'Tomorrow',
-                          tagColor: const Color(0xFFE9A55B),
-                          showLocationInfo: true,
-                          onTap: () {
-                            print('Teatro card tapped');
-                          },
-                        ),
                       ],
                     ),
                   ),

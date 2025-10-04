@@ -118,7 +118,8 @@ class _ProfilePageState extends State<ProfilePage> {
       "Outdoor",
       "Know the world",
       "Movies",
-      "Food"
+      "Food",
+      "Academic"
     ];
 
     showDialog(

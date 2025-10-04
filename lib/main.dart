@@ -1,10 +1,15 @@
 import 'package:app_flutter/firebase_options.dart';
+import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/auth_service.dart';
+import 'package:app_flutter/util/crash_analytics.dart';
+import 'package:app_flutter/util/google_api_key.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -23,17 +28,22 @@ void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-);
+  );
+  final crashTracker = CrashTracker();
+  await crashTracker.initializeCrashlytics();
+  
+
+  await RemoteConfigService().initialize();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
-
 
   @override
   Widget build(BuildContext context) {
+    final analytics = AnalyticsService();
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -51,6 +61,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
+        navigatorObservers: [analytics.getAnalyticsObserver()],
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
@@ -96,17 +107,31 @@ class MainPageState extends State<MainPage> {
     const ProfilePage(),
   ];
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index , {Map<String, dynamic>? arguments}) {
     setState(() {
       _selectedIndex = index;
     });
+    if (arguments == null && index == 1) {
+      _navigatorKeys[index].currentState?.pushReplacementNamed(
+        '/',
+        arguments: {},
+      );
+    }
   }
 
-  void selectTab(int index) {
-      setState(() {
-        _selectedIndex = index;
-      });
+  void selectTab(int index, {Map<String, dynamic>? arguments}) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    
+    // Si hay argumentos y es el tab de eventos (1), navegar con argumentos
+    if (arguments != null && index == 1) {
+      _navigatorKeys[index].currentState?.pushReplacementNamed(
+        '/',
+        arguments: arguments,
+      );
     }
+  }
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
   List<GlobalKey<NavigatorState>> get navigatorKeys => _navigatorKeys;
@@ -149,8 +174,10 @@ class MainPageState extends State<MainPage> {
           Navigator(
             key: _navigatorKeys[1],
             onGenerateRoute: (settings) {
+              final args = settings.arguments as Map<String, dynamic>?;
+              final startWithMap = args?['startWithMapView'] as bool? ?? false;
               return MaterialPageRoute(
-                builder: (_) => EventsMapListView(),
+                builder: (_) => EventsMapListView(startWithMapView: startWithMap),
               );
             },
           ),
