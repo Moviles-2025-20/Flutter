@@ -64,8 +64,11 @@ class WishMeLuckService {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         final data = doc.data();
-        if (data != null && data.containsKey('lastWished')) {
-          return (data['lastWished'] as Timestamp).toDate();
+        if (data != null && data.containsKey('stats')) {
+          final stats = data['stats'] as Map<String, dynamic>;
+          if (stats.containsKey('last_wish_me_luck')) {
+            return (data['stats']['last_wish_me_luck'] as Timestamp).toDate();
+          }
         }
       }
       return null;
@@ -83,8 +86,10 @@ class WishMeLuckService {
       }
 
       await _firestore.collection('users').doc(user.uid).set({
-        'lastWished': Timestamp.fromDate(date),
-      }, SetOptions(merge: true));
+      'stats': {
+        'last_wish_me_luck': Timestamp.fromDate(date),
+      }
+    }, SetOptions(merge: true));
     } catch (e) {
       print('Error al establecer la última fecha: $e');
     }
