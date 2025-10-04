@@ -70,7 +70,7 @@ class NearbyEventsBottomSheet extends StatelessWidget {
                       Icon(Icons.location_on, color: const Color(0xFFE3944F)),
                       const SizedBox(width: 8),
                       const Text(
-                        'Eventos Cercanos',
+                        'Nearby Events',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,

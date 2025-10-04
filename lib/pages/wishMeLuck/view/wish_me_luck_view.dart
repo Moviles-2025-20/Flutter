@@ -1,9 +1,9 @@
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
-import 'package:app_flutter/widgets/MagicBall/button_wish_me_luck.dart';
 import 'package:app_flutter/widgets/MagicBall/event_card_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/events_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
+import 'package:app_flutter/widgets/MagicBall/button_wish_me_luck.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart'; // Flutter plugin used to access device sensors
