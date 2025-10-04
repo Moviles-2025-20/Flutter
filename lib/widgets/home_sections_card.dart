@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum CardType { weeklyChallenge, personalityQuiz, wishMeLuck, map }
+enum CardType { weeklyChallenge, FreeTimeEvents, wishMeLuck, map }
 
 class HomeSectionsCard extends StatelessWidget {
   final Function(CardType) onCardTap;
@@ -71,9 +71,9 @@ class _MindCardsGrid extends StatelessWidget {
           onTap: () => onCardTap(CardType.weeklyChallenge),
         ),
         MindCard(
-          title: 'Personality Quiz',
+          title: 'Free Time Events',
           color: Color(0xFFED6275),
-          onTap: () => onCardTap(CardType.personalityQuiz),
+          onTap: () => onCardTap(CardType.FreeTimeEvents),
         ),
         MindCard(
           title: 'Wish me Luck',

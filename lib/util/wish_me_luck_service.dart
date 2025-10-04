@@ -1,12 +1,15 @@
 import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
+
 class WishMeLuckService {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AnalyticsService _analytics = AnalyticsService();
 
 
   //Lista para poblar la base de datos
@@ -19,6 +22,8 @@ class WishMeLuckService {
       if (user == null) {
         throw Exception('Usuario no autenticado');
       }
+
+      await _analytics.logDiscoveryMethod(DiscoveryMethod.wishMeLuck);
 
       /*
       print('Creando eventos...');
@@ -86,10 +91,11 @@ class WishMeLuckService {
       }
 
       await _firestore.collection('users').doc(user.uid).set({
-      'stats': {
-        'last_wish_me_luck': Timestamp.fromDate(date),
-      }
-    }, SetOptions(merge: true));
+        'lastWished': Timestamp.fromDate(date),
+      }, SetOptions(merge: true));
+
+      _analytics.logWishMeLuckUsed(user.uid);
+
     } catch (e) {
       print('Error al establecer la última fecha: $e');
     }

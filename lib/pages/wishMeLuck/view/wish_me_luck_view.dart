@@ -1,9 +1,9 @@
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
-import 'package:app_flutter/widgets/MagicBall/button_wish_me_luck.dart';
 import 'package:app_flutter/widgets/MagicBall/event_card_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/events_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/header_section.dart';
 import 'package:app_flutter/widgets/MagicBall/magic_ball.dart';
+import 'package:app_flutter/widgets/MagicBall/button_wish_me_luck.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart'; // Flutter plugin used to access device sensors
@@ -38,7 +38,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   late Animation<double> _shakeAnimation;
   int lastWishedTime = 0; // inicializamos con 0
 
-  final WishMeLuckViewModel _viewModel = WishMeLuckViewModel();
 
   // Variables para el acelerómetro
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
@@ -67,8 +66,9 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   }
 
   Future<void> _loadLastWishedTime() async {
-    lastWishedTime = await _viewModel.calculateDaysSinceLastWished();
-    setState(() {}); // refresca la UI para que HeaderSectionWML reciba el valor
+    final viewModel = context.read<WishMeLuckViewModel>();
+    lastWishedTime = await viewModel.calculateDaysSinceLastWished();
+    setState(() {}); 
   }
 
   void _initAccelerometer() {
@@ -126,6 +126,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     await _triggerShake();
     await Future.delayed(const Duration(milliseconds: 1500));
     await viewModel.wishMeLuck();
+    await _loadLastWishedTime();
 
     _isShaking = false;
   }
@@ -196,7 +197,8 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                   onPressed: () async {
                     _triggerShake();
                     await Future.delayed(const Duration(milliseconds: 1500));
-                    viewModel.wishMeLuck();
+                    await viewModel.wishMeLuck();
+                    await _loadLastWishedTime();
                   },
                 ),
                 const SizedBox(height: 20),

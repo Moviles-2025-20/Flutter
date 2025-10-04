@@ -41,13 +41,15 @@ class WishMeLuckViewModel extends ChangeNotifier {
     try {
       // Simular shake/animation delay
       await Future.delayed(const Duration(milliseconds: 1500));
-      
+
       _currentEvent = await _service.getWishMeLuckEvent();
       _error = null;
     } catch (e) {
       _error = 'Error al obtener evento: $e';
       _currentEvent = null;
     } finally {
+      calculateDaysSinceLastWished();
+      await _service.setLastWishedDate(DateTime.now());
       _isLoading = false;
       notifyListeners();
     }
@@ -66,7 +68,7 @@ class WishMeLuckViewModel extends ChangeNotifier {
     } else {
       final difference = now.difference(lastWishedDate).inDays;
       lastWishedTime = difference;
-      notifyListeners(); // si estás en un ViewModel extendiendo ChangeNotifier
+      notifyListeners();
     }
 
     return lastWishedTime;

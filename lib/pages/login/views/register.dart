@@ -22,13 +22,17 @@ class _RegisterViewState extends State<RegisterView> {
 
   final List<String> categories = [
     "Music",
-    "Sport",
+    "Sports",
     "Academic",
     "Technology",
     "Movies",
     "Literature",
     "Know the world",
-    "Food"
+    "Food",
+    "Art",
+    "Gaming",
+    "Science",
+    "Outdoor"
   ];
 
   final List<String> days = [
