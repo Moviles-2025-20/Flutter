@@ -7,6 +7,8 @@ import 'package:app_flutter/pages/events/view/make_comment_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../../../util/analytics_service.dart';
+
 class DetailEvent extends StatefulWidget {
   final Event event;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,6 +22,7 @@ class DetailEvent extends StatefulWidget {
 
 class _DetailEventState extends State<DetailEvent> {
   final CommentService _commentService = CommentService();
+  final AnalyticsService _analytics = AnalyticsService();
   late Future<List<Comment>> _commentsFuture;
   final UserActivityService _userActivityService = UserActivityService();
   bool _isCheckedIn = false;
@@ -41,8 +44,11 @@ class _DetailEventState extends State<DetailEvent> {
   }
 
     void _toggleCheckIn() async {
-    await _userActivityService.toggleCheckIn(widget.event.id, widget.event.category);
-    _loadCheckIn();
+      await _userActivityService.toggleCheckIn(widget.event.id, widget.event.category);
+      print(widget.event.id);
+      print(widget.event.category);
+      await _analytics.logCheckIn(widget.event.id, widget.event.category);
+      _loadCheckIn();
   }
 
   void _refreshComments() {
