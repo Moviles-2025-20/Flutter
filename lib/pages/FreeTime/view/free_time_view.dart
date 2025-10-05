@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/notification.dart';
 import 'package:intl/intl.dart';
-import 'package:app_flutter/pages/events/model/event.dart' as EventsModel;
+import 'package:app_flutter/pages/events/model/event.dart' hide Event;
 import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 
 
