@@ -40,8 +40,8 @@ class _DetailEventState extends State<DetailEvent> {
     });
   }
 
-  void _toggleCheckIn() async {
-    await _userActivityService.toggleCheckIn(widget.event.id);
+    void _toggleCheckIn() async {
+    await _userActivityService.toggleCheckIn(widget.event.id, widget.event.category);
     _loadCheckIn();
   }
 
@@ -76,6 +76,7 @@ class _DetailEventState extends State<DetailEvent> {
             const SizedBox(height: 16),
 
             // 🔸 Botones
+
             Row(
               children: [
                 Expanded(
@@ -91,6 +92,7 @@ class _DetailEventState extends State<DetailEvent> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => MakeCommentPage(eventId: widget.event.id),
+                          
                         ),
                       );
                     },
@@ -101,13 +103,14 @@ class _DetailEventState extends State<DetailEvent> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isCheckedIn ? Colors.green : Colors.orangeAccent,
+                      backgroundColor: _isCheckedIn ? Colors.green : Colors.orangeAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: _toggleCheckIn,
+                    onPressed: () {
+                      _toggleCheckIn();
+                    },
                     child: const Text("Check In"),
                   ),
                 ),
@@ -212,7 +215,7 @@ class _DetailEventState extends State<DetailEvent> {
                           ? widget.event.schedule.times.first
                           : "",
                     ),
-                  ],
+                  ]
                 ),
                 const SizedBox(height: 8),
                 Text(

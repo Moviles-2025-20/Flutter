@@ -1,11 +1,11 @@
 import 'package:app_flutter/pages/FreeTime/viewmodel/free_time_viewmodel.dart';
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:app_flutter/util/recommendation_service.dart';
 import 'package:app_flutter/widgets/recommendation_card.dart';
 
-import '../pages/detailEvent.dart';
 import '../pages/events/model/event.dart' as EventsModel;
 import '../util/firebase_service.dart';
 
@@ -91,7 +91,7 @@ class RecommendationsSection extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => DetailEvent(),
+                                  builder: (context) => DetailEvent( event : event),
                                 ),
                               );
                             },

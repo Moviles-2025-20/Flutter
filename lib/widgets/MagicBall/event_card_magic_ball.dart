@@ -1,4 +1,6 @@
 
+import 'package:app_flutter/pages/events/model/event.dart';
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:app_flutter/pages/wishMeLuck/model/wish_me_luck_event.dart';
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
 import 'package:flutter/material.dart';
@@ -42,12 +44,22 @@ class MotivationalMessage extends StatelessWidget {
 }
 class EventPreviewCard extends StatelessWidget {
   final WishMeLuckEvent event;
+  final Event eventDetail ;
 
-  const EventPreviewCard({Key? key, required this.event}) : super(key: key);
+  const EventPreviewCard({Key? key, required this.event, required this.eventDetail}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailEvent(event: eventDetail),
+          ),
+        );
+      },
+      child:AnimatedOpacity(
       duration: const Duration(milliseconds: 800),
       opacity: 1.0,
       child: Container(
@@ -157,6 +169,7 @@ class EventPreviewCard extends StatelessWidget {
           ],
         ),
       ),
+    )
     );
   }
 }

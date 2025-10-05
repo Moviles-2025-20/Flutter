@@ -24,7 +24,7 @@ class UserActivityService {
     return null;
   }
 
-  Future<void> toggleCheckIn(String eventId) async {
+  Future<void> toggleCheckIn(String eventId, String category) async {
     final user = _auth.currentUser;
     if (user == null) {
       throw Exception("Usuario no autenticado");
@@ -54,7 +54,7 @@ class UserActivityService {
       }
     }
     await _userCollection.doc(user.uid).update({
-      'last_event': eventId,
+      'last_event': category,
     });
   }
 }

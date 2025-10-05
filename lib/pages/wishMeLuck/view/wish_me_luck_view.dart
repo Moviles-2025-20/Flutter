@@ -43,7 +43,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
   bool _isShaking = false;
   DateTime? _lastShakeTime;
-  static const double _shakeThreshold = 10.0; // Umbral de sensibilidad ESO SE CAMBIO PARA PROBAR EN EMULADOR ERA 15
+  static const double _shakeThreshold = 20.0; //
   static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas, evita múltiples detecciones rápidas
 
 
@@ -61,14 +61,13 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     );
 
     // Cargamos la variable asincrónica
-    _loadLastWishedTime();
-    _initAccelerometer();
-  }
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<WishMeLuckViewModel>();
+      viewModel.calculateDaysSinceLastWished();
+    });
 
-  Future<void> _loadLastWishedTime() async {
-    final viewModel = context.read<WishMeLuckViewModel>();
-    lastWishedTime = await viewModel.calculateDaysSinceLastWished();
-    setState(() {}); 
+    _initAccelerometer();
+
   }
 
   void _initAccelerometer() {
@@ -126,7 +125,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     await _triggerShake();
     await Future.delayed(const Duration(milliseconds: 1500));
     await viewModel.wishMeLuck();
-    await _loadLastWishedTime();
 
     _isShaking = false;
   }
@@ -170,7 +168,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
               children: [
                 // Enviamos la variable al Header
                 HeaderSectionWML(
-                  lastWished: lastWishedTime,
+                  lastWished: viewModel.lastWished,
                 ),
                 const SizedBox(height: 20),
 
@@ -186,7 +184,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                 if (viewModel.currentEvent != null) const SizedBox(height: 20),
 
                 if (viewModel.currentEvent != null)
-                  EventPreviewCard(event: viewModel.currentEvent!)
+                  EventPreviewCard(event: viewModel.currentEvent!, eventDetail: viewModel.currentEventDetail!)
                 else
                   const EmptyState(),
 
@@ -198,7 +196,6 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
                     _triggerShake();
                     await Future.delayed(const Duration(milliseconds: 1500));
                     await viewModel.wishMeLuck();
-                    await _loadLastWishedTime();
                   },
                 ),
                 const SizedBox(height: 20),

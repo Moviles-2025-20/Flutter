@@ -38,7 +38,7 @@ class CustomHeader extends StatelessWidget {
               _NotificationButton(onTap: onNotificationTap),
             ],
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 5),
         ],
       ),
     );

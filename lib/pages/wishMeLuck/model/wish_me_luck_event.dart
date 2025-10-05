@@ -11,9 +11,9 @@ class WishMeLuckEvent {
     required this.description,
   });
 
-  factory WishMeLuckEvent.fromJson(Map<String, dynamic> json) {
+  factory WishMeLuckEvent.fromJson(Map<String, dynamic> json, String docId) {
     return WishMeLuckEvent(
-      id: json['id'] ?? '',
+      id: docId,
       title: json['title'] ?? json['name'] ?? 'Untitled Event',
       imageUrl: json['metadata']?['image_url'] ?? json['image_url'] ?? '',
       description: json['description'] ?? 'No description available',
