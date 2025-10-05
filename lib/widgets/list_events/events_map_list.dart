@@ -37,6 +37,7 @@ class NearbyEventsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.transparent,
@@ -98,6 +99,7 @@ class NearbyEventsBottomSheet extends StatelessWidget {
                       final distance = _getDistanceText(event);
                       
                       return Card(
+
                         margin: const EdgeInsets.only(bottom: 12),
                         child: InkWell(
                           onTap: () => onEventTap(event),

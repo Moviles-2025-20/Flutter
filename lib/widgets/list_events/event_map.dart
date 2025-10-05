@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:app_flutter/widgets/list_events/events_map_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -59,28 +60,18 @@ class _EventsMapViewState extends State<EventsMapView> {
         events: nearbyEvents,
         userPosition: _viewModel.userPosition,
         onEventTap: (event) {
-          Navigator.pop(context);
-          _animateToEvent(event);
+          Navigator.pop(context); // close the bottom sheet
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailEvent(event: event),
+            ),
+          );
         },
       ),
     );
   }
 
-  void _animateToEvent(Event event) {
-    if (_mapController != null && event.location.coordinates.length >= 2) {
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(
-              event.location.coordinates[0],
-              event.location.coordinates[1],
-            ),
-            zoom: 15,
-          ),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
