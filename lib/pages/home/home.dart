@@ -52,47 +52,12 @@ class Home extends StatelessWidget {
               print('Search: $query');
             },
           ),
-          body: SingleChildScrollView(
+          body: ListView(
             padding: EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HomeSectionsCard(
-                  onCardTap: (cardType) {
-                    final mainPageState =
-                        context.findAncestorStateOfType<MainPageState>();
-
-                    switch (cardType) {
-                      case CardType.weeklyChallenge:
-                        break;
-                      case CardType.FreeTimeEvents:
-                        if (user != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FreeTimeView(userId: user.uid),
-                            ),
-                          );
-                        }
-                        break;
-                      case CardType.wishMeLuck:
-                        mainPageState?.selectTab(2);
-                        break;
-                      case CardType.map:
-                        mainPageState?.selectTab(
-                          1,
-                          arguments: {'startWithMapView': true},
-                        );
-                        break;
-                    }
-                  },
-                ),
-
-
+            children: [
                 // Body Content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -150,13 +115,11 @@ class Home extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                RecommendationsSection(),
-                const SizedBox(height: 30),
               ],
-            ),
-          ),
+            )
+            
         );
+          
       },
     );
   }
