@@ -217,10 +217,9 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Eliminar cuenta del usuario
-  Future<void> deleteAccount() async {
+  Future<bool> deleteAccount() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
 
     _isLoading = true;
     notifyListeners();
@@ -233,15 +232,17 @@ class ProfileViewModel extends ChangeNotifier {
       await user.delete();
 
       _currentUser = null;
+      return true;
     } catch (e) {
       _error = "Error al eliminar cuenta: $e";
       debugPrint("Error deleting account: $e");
-      rethrow;
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
 
 
   String getPersonalityType() {
