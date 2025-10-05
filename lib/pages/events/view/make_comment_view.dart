@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,7 @@ class MakeCommentPage extends StatefulWidget {
 class _MakeCommentPageState extends State<MakeCommentPage> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final user = FirebaseAuth.instance.currentUser;
   int rating = 4;
   File? _selectedImage;
 
@@ -42,6 +44,9 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
       description: descriptionController.text,
       rating: rating,
       imageFile: _selectedImage,
+      userName: user?.displayName ?? 'Anonymous',
+      avatar: user?.photoURL ?? '',
+      
     );
 
     if (!mounted) return;

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
@@ -8,11 +9,14 @@ import '../../../util/firebase_service.dart';
 class CommentViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   Future<void> submitComment({
+
     required String eventId,
     required String title,
     required String description,
     required int rating,
     File? imageFile,
+    required String userName,
+    required String avatar,
   }) async {
     try {
       String? imageUrl;
@@ -30,8 +34,10 @@ class CommentViewModel extends ChangeNotifier {
         "title": title,
         "description": description,
         "rating": rating,
-        "imageUrl": imageUrl,
+        "imageUrl": imageUrl ?? '',
         "createdAt": FieldValue.serverTimestamp(),
+        "userName": userName,
+        "avatar": avatar,
       };
 
       await _firestore
