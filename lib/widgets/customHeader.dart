@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomHeader extends StatelessWidget {
+class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
   final String profileImagePath;
   final VoidCallback onNotificationTap;
@@ -14,39 +14,46 @@ class CustomHeader extends StatelessWidget {
     required this.onSearchSubmitted,
   }) : super(key: key);
 
- @override
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFF6389E2),
-        borderRadius: const BorderRadius.only(
+    return AppBar(
+      backgroundColor: Color(0xFF6389E2),
+      elevation: 0,
+      toolbarHeight: 100,
+      automaticallyImplyLeading: false,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
         ),
       ),
-      padding: EdgeInsets.all(10),
-      child: Column(
-        children: [
-          // Profile and notification row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      flexibleSpace: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _ProfileSection(
-                userName: userName,
-                profileImagePath: profileImagePath,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _ProfileSection(
+                    userName: userName,
+                    profileImagePath: profileImagePath,
+                  ),
+                  _NotificationButton(onTap: onNotificationTap),
+                ],
               ),
-              _NotificationButton(onTap: onNotificationTap),
+              SizedBox(height: 5),
             ],
           ),
-          SizedBox(height: 20),
-          // Search Bar
-          _SearchBar(onSubmitted: onSearchSubmitted),
-        ],
+        ),
       ),
     );
   }
-}
 
+  @override
+  Size get preferredSize => const Size.fromHeight(100);
+}
 
 class _ProfileSection extends StatelessWidget {
   final String userName;
@@ -62,9 +69,10 @@ class _ProfileSection extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          radius: 35,
-          backgroundImage: AssetImage(profileImagePath),
-          backgroundColor: Colors.white,
+          radius: 25,
+          backgroundImage: profileImagePath.isNotEmpty
+              ? NetworkImage(profileImagePath)
+              : AssetImage('assets/images/default_profile.png') as ImageProvider,
         ),
         SizedBox(width: 12),
         Column(
@@ -99,48 +107,15 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: (){
-        Navigator.pushNamed(context, '/notifications');
-      },
-      child: Icon(
+    return IconButton(
+      icon: Icon(
         Icons.notifications_outlined,
         color: Colors.white,
         size: 35,
       ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final Function(String) onSubmitted;
-
-  const _SearchBar({required this.onSubmitted});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: Colors.grey[600]),
-          SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              onSubmitted: onSubmitted,
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[500]),
-              ),
-            ),
-          ),
-        ],
-      ),
+      onPressed: () {
+        Navigator.pushNamed(context, '/notifications');
+      },
     );
   }
 }

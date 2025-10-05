@@ -1,0 +1,71 @@
+{
+  "project_info": {
+    "project_number": "457564875045",
+    "firebase_url": "https://parchandes-7e096-default-rtdb.firebaseio.com",
+    "project_id": "parchandes-7e096",
+    "storage_bucket": "parchandes-7e096.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457564875045:android:6bc9b54b5f933e9b4e12cc",
+        "android_client_info": {
+          "package_name": "com.mobileclass.parchandes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "457564875045-ja6vuackfudvfino1bd5otsr535dphpe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobileclass.parchandes",
+            "certificate_hash": "4162fd75da8a04d221fb385dfcc175d91e9856bf"
+          }
+        },
+        {
+          "client_id": "457564875045-l27j6ak3bmoosqdsv0fovd0avcskmikf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobileclass.parchandes",
+            "certificate_hash": "173c23e4b9f18e419423f609bc251274d2979d19"
+          }
+        },
+        {
+          "client_id": "457564875045-lq4in2d9u70c3q4jb49v4n9idpq4s172.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobileclass.parchandes",
+            "certificate_hash": "245b772628dede30b48c17b82c00f9d21b1e4c23"
+          }
+        },
+        {
+          "client_id": "457564875045-92ht5oakdkjstjuolsfb1jd2iv952gno.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLGQnkpAELBOHxSbb7jR9Lpsj4-I7ZiL4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "457564875045-92ht5oakdkjstjuolsfb1jd2iv952gno.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "457564875045-cibjsigg5m1vfvicqre8vbfenr6mkoaf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "moviles202520.Swifties"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
