@@ -43,7 +43,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
   bool _isShaking = false;
   DateTime? _lastShakeTime;
-  static const double _shakeThreshold = 10.0; // Umbral de sensibilidad ESO SE CAMBIO PARA PROBAR EN EMULADOR ERA 15
+  static const double _shakeThreshold = 20.0; //
   static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas, evita múltiples detecciones rápidas
 
 
