@@ -11,6 +11,8 @@ class AnalyticsService {
 
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
+  
+
   // Discovery Methods
   Future<void> logDiscoveryMethod(DiscoveryMethod method) async {
 
@@ -52,6 +54,7 @@ class AnalyticsService {
 
   //Percentage of outdoor indoor
   Future<void> logOutdoorIndoorActivity(int indoorOutdoorScore) async {
+    
     await _analytics.logEvent(
         name: "outdoor_indoor_preference",
         parameters: {
@@ -84,8 +87,22 @@ class AnalyticsService {
     );
   }
 
+  Future<void> logCheckIn(String activityId, String category) async {
+    await _analytics.logEvent(
+      name: 'activity_check_in',
+      parameters: {
+        'activity_id': activityId,
+        'category': category,
+      },
+    );
+  }
+  void activarFirebase() async{
+    await _analytics.setAnalyticsCollectionEnabled(true);
+  }
+
+
   // Observer para navigation
-  FirebaseAnalyticsObserver getAnalyticsObserver() {
+  FirebaseAnalyticsObserver getAnalyticsObserver(){
     return FirebaseAnalyticsObserver(analytics: _analytics);
   }
 }

@@ -1,5 +1,4 @@
 import 'package:app_flutter/firebase_options.dart';
-import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
@@ -9,7 +8,6 @@ import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +41,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final analytics = AnalyticsService();
+    analytics.activarFirebase;
 
     return MultiProvider(
       providers: [
@@ -98,14 +97,14 @@ class MainPage extends StatefulWidget {
 
 class MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-
+  /*
   final List<Widget> _pages = [
     const Home(),
     const EventsMapListView(),
     // Placeholder, will be replaced in build method
     const SizedBox(),
     const ProfilePage(),
-  ];
+  ];*/
 
   void _onItemTapped(int index , {Map<String, dynamic>? arguments}) {
     setState(() {
@@ -137,6 +136,7 @@ class MainPageState extends State<MainPage> {
   List<GlobalKey<NavigatorState>> get navigatorKeys => _navigatorKeys;
   @override
   Widget build(BuildContext context) {
+    /*
     Widget bodyWidget;
     if (_selectedIndex == 2) {
       bodyWidget = FutureBuilder(
@@ -153,13 +153,9 @@ class MainPageState extends State<MainPage> {
       );
     } else {
       bodyWidget = _pages[_selectedIndex];
-    }
+    }*/
 
   return Scaffold(
-      appBar: AppBar(
-        title: const Text("Demo Navigation"),
-        centerTitle: true,
-      ),
       body: IndexedStack(
         index: _selectedIndex,
         children: [
