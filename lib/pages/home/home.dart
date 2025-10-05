@@ -1,10 +1,14 @@
 import 'package:app_flutter/main.dart';
+import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
+import 'package:app_flutter/pages/weekly/view/weekly_challenge_view.dart';
+
+import '../../util/recommendation_service.dart';
 import '../../widgets/recommendation_section.dart';
 import '../FreeTime/view/free_time_view.dart';
 
@@ -82,6 +86,69 @@ class Home extends StatelessWidget {
                         break;
                     }
                   },
+                ),
+
+
+                // Body Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HomeSectionsCard(
+                          onCardTap: (cardType) {
+                            final mainPageState =
+                            context.findAncestorStateOfType<MainPageState>();
+
+                            switch (cardType) { 
+                              case CardType.weeklyChallenge:
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChangeNotifierProvider(
+                                      create: (_) => WeeklyChallengeViewModel(),
+                                      child: const WeeklyChallengeView(),
+                                    ),
+                                  ),
+                                );
+                                break;
+                              
+
+                              case CardType.FreeTimeEvents:
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FreeTimeView(userId: user.uid),
+                                    ),
+                                  );
+                                }
+                                break;
+
+                              case CardType.wishMeLuck:
+                                mainPageState?.selectTab(2);
+                                break;
+                              case CardType.map:
+                                mainPageState?.selectTab(1, arguments: {'startWithMapView': true});
+                                break;
+                            }
+                          }
+                        ),
+
+                        const SizedBox(height: 30),
+
+
+                        // Carga dinámica de recomendaciones con FutureBuilder
+                        RecommendationsSection(),
+
+
+                        const SizedBox(height: 30),
+
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 30),
                 RecommendationsSection(),
