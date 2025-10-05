@@ -31,9 +31,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         child: Padding(
           padding: EdgeInsets.all(10),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   _ProfileSection(
                     userName: userName,
