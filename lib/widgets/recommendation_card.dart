@@ -132,6 +132,7 @@ class _CardContent extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // 🔥 evita overflow
         children: [
           // Descripción
           Text(
@@ -144,8 +145,6 @@ class _CardContent extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-
-          const SizedBox(height: 8),
 
           // Ubicación debajo de la descripción
           if (location != null)
@@ -163,9 +162,7 @@ class _CardContent extends StatelessWidget {
               ],
             ),
 
-          const SizedBox(height: 8),
-
-          // Día, hora y duración usando Wrap para evitar overflow
+          // Día, hora y duración
           Wrap(
             spacing: 8,
             runSpacing: 4,

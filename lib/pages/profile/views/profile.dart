@@ -174,7 +174,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ---------------------- Eliminar cuenta ----------------------
   void _showDeleteAccountDialog(
-      BuildContext context, ProfileViewModel profileViewModel, AuthViewModel authViewModel) {
+      BuildContext context,
+      ProfileViewModel profileViewModel,
+      AuthViewModel authViewModel,
+      ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -183,20 +186,25 @@ class _ProfilePageState extends State<ProfilePage> {
           "Are you sure you want to delete your account? This action cannot be undone.",
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               try {
-                await profileViewModel.deleteAccount();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  await authViewModel.logout();
+                final success = await profileViewModel.deleteAccount();
+                if (success && context.mounted) {
+                  Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                    '/', // Ruta principal (main.dart)
+                        (route) => false,
+                  );
                 }
               } catch (e) {
                 if (context.mounted) {
                   Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                    '/start',
+                    '/', // Fallback por si ocurre error
                         (route) => false,
                   );
                 }
@@ -220,7 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF3C5BA9),
+        backgroundColor: const Color(0xFF6389E2),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16.0),
@@ -452,8 +460,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const wishMeLuckStatsView())),
                   child: const Text("Results of the weekly challenge", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
+                const SizedBox(height: 10),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(234, 119, 134, 148), minimumSize: const Size(double.infinity, 40)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
                   onPressed: () => _showEditProfileDialog(context, profileViewModel),
                   child: const Text("Change your profile information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
