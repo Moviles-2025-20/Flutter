@@ -1,5 +1,7 @@
 // lib/util/analytics_service.dart
+import 'package:app_flutter/util/firebase_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+
 
 enum DiscoveryMethod { wishMeLuck, manualBrowse }
 
@@ -10,7 +12,7 @@ class AnalyticsService {
   AnalyticsService._internal();
 
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-
+  final firestore = FirebaseService.firestore;
   
 
   // Discovery Methods
@@ -51,16 +53,44 @@ class AnalyticsService {
       },
     );
   }
+  // Weekly Challenge specific
+  Future<void> logWeeklyChallengeCompleted(String userId, String challengeId) async {
+    final now = DateTime.now();
 
-  Future<void> logWeeklyChallengeUsed(String userId) async {
+    
     await _analytics.logEvent(
-      name: 'weekly_challenge_used',
+      name: 'weekly_challenge_completed',
       parameters: {
         'user_id': userId,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'challenge_id': challengeId,
+        'timestamp': now.millisecondsSinceEpoch,
       },
     );
+
+    
+    await firestore.collection('weekly_challenge_completions').add({
+      'user_id': userId,
+      'challenge_id': challengeId,
+      'timestamp': now,
+    });
   }
+
+
+
+  Future<int> getWeeklyChallengesCompletedLast30Days(String userId) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+
+    final querySnapshot = await firestore
+        .collection('weekly_challenge_completions')
+        .where('user_id', isEqualTo: userId)
+        .where('timestamp', isGreaterThanOrEqualTo: thirtyDaysAgo)
+        .get();
+
+    return querySnapshot.docs.length;
+  }
+
+  
 
   //Percentage of outdoor indoor
   Future<void> logOutdoorIndoorActivity(int indoorOutdoorScore) async {
