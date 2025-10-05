@@ -75,7 +75,7 @@ class _DetailEventState extends State<DetailEvent> {
             _buildEventCard(),
             const SizedBox(height: 16),
 
-            // 🔸 Botones
+
 
             Row(
               children: [
@@ -154,7 +154,7 @@ class _DetailEventState extends State<DetailEvent> {
     );
   }
 
-  // 🟠 Tarjeta del evento
+
   Widget _buildEventCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -230,7 +230,7 @@ class _DetailEventState extends State<DetailEvent> {
     );
   }
 
-  // 🟢 Sección de calificaciones
+
   Widget _buildRatingSection() {
     final percentages = [0.40, 0.30, 0.15, 0.10, 0.05];
     final labels = [5, 4, 3, 2, 1];
@@ -292,7 +292,7 @@ class _DetailEventState extends State<DetailEvent> {
     );
   }
 
-  // 💬 Tarjeta de comentario bonita
+
   Widget _buildCommentCard(Comment comment) {
     final formattedDate =
         DateFormat('MMM d, yyyy • hh:mm a').format(comment.createdAt);
