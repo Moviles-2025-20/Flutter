@@ -1,4 +1,3 @@
-import 'package:app_flutter/pages/FreeTime/viewmodel/free_time_viewmodel.dart';
 import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

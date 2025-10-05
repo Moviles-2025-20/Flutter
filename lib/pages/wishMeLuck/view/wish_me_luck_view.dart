@@ -40,6 +40,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
 
   // Variables para el acelerómetro
+  // ignore: unused_field
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
   bool _isShaking = false;
   DateTime? _lastShakeTime;

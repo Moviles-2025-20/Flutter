@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/weekly/view/weekly_challenge_view.dart';
 
-import '../../util/recommendation_service.dart';
 import '../../widgets/recommendation_section.dart';
 import '../FreeTime/view/free_time_view.dart';
 
@@ -73,7 +72,7 @@ class Home extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (context) => ChangeNotifierProvider(
                                       create: (_) => WeeklyChallengeViewModel(),
-                                      child: const WeeklyChallengeView(),
+                                      child:  WeeklyChallengeView(),
                                     ),
                                   ),
                                 );

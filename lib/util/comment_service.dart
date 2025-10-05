@@ -1,5 +1,3 @@
-import 'package:app_flutter/pages/events/model/event.dart';
-import 'package:app_flutter/pages/events/model/event_filter.dart';
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
