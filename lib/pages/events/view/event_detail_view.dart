@@ -43,6 +43,8 @@ class _DetailEventState extends State<DetailEvent> {
 
     void _toggleCheckIn() async {
       await _userActivityService.toggleCheckIn(widget.event.id, widget.event.category);
+      print(widget.event.id);
+      print(widget.event.category);
       await _analytics.logCheckIn(widget.event.id, widget.event.category);
       _loadCheckIn();
   }

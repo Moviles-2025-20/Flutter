@@ -46,6 +46,8 @@ class RegisterViewModel extends ChangeNotifier {
 
   Future<void> saveUserData(String uid) async {
     final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    print("1. Porcentaje:");
+    print( indoorOutdoorScore);
 
     _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
     
@@ -81,6 +83,9 @@ class RegisterViewModel extends ChangeNotifier {
         },
       },
     }, SetOptions(merge: true));
+
+    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
+    
   }
 }
 
