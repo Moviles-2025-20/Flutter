@@ -52,6 +52,16 @@ class AnalyticsService {
     );
   }
 
+  Future<void> logWeeklyChallengeUsed(String userId) async {
+    await _analytics.logEvent(
+      name: 'weekly_challenge_used',
+      parameters: {
+        'user_id': userId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
   //Percentage of outdoor indoor
   Future<void> logOutdoorIndoorActivity(int indoorOutdoorScore) async {
     

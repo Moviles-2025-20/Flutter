@@ -1,5 +1,6 @@
 import 'package:app_flutter/main.dart';
 import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,7 +14,8 @@ import '../../widgets/recommendation_section.dart';
 import '../FreeTime/view/free_time_view.dart';
 
 class Home extends StatelessWidget {
-  const Home({super.key});
+  final AnalyticsService _analytics = AnalyticsService();
+  Home({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +70,7 @@ class Home extends StatelessWidget {
 
                             switch (cardType) { 
                               case CardType.weeklyChallenge:
+                                _analytics.logWeeklyChallengeUsed(user.uid);
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
