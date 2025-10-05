@@ -72,7 +72,7 @@ class Home extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (context) => ChangeNotifierProvider(
                                       create: (_) => WeeklyChallengeViewModel(),
-                                      child: const WeeklyChallengeView(),
+                                      child:  WeeklyChallengeView(),
                                     ),
                                   ),
                                 );
