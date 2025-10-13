@@ -73,6 +73,17 @@ class AnalyticsService {
       'challenge_id': challengeId,
       'timestamp': now,
     });
+
+    await firestore.collection('user_activities').add(
+      {
+        'user_id': userId,
+        'event_id': challengeId,
+        'time': now,
+        'source': "manual",
+        'type' : "weekly challenge",
+        "with_friends": false,
+      }
+    );
   }
 
 
