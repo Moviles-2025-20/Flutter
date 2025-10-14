@@ -200,7 +200,7 @@ class EventsMapViewModel extends ChangeNotifier {
     final distanceInfo = distanceKm != null 
         ? '${distanceKm.toStringAsFixed(1)} km' 
         : '';
-    final nearbyTag = isNearby ? '🎯 Cercano' : '';
+    final nearbyTag = isNearby ? '🎯 Nearby' : '';
     
     final parts = [
       if (cityInfo.isNotEmpty) cityInfo,
@@ -226,8 +226,8 @@ class EventsMapViewModel extends ChangeNotifier {
       markerId: const MarkerId("user_location"),
       position: _userPosition!,
       infoWindow: const InfoWindow(
-        title: "Tu ubicación",
-        snippet: "Estás aquí",
+        title: "Your location",
+        snippet: "You are here",
       ),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
     );
