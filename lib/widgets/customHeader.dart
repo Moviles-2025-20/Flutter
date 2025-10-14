@@ -36,10 +36,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _ProfileSection(
-                    userName: userName,
-                    profileImagePath: profileImagePath,
+                    Expanded(child: _ProfileSection(
+                      userName: userName,
+                      profileImagePath: profileImagePath,
+                    ),
                   ),
+                  
                   _NotificationButton(onTap: onNotificationTap),
                 ],
               ),
@@ -75,8 +77,10 @@ class _ProfileSection extends StatelessWidget {
               : AssetImage('assets/images/default_profile.png') as ImageProvider,
         ),
         SizedBox(width: 12),
-       Column(
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Welcome',
@@ -95,7 +99,8 @@ class _ProfileSection extends StatelessWidget {
               ),
             ],
           ),
-      ]
+        ),
+      ],
     );
   }
 }
