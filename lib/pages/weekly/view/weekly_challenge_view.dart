@@ -22,6 +22,8 @@ class _WeeklyChallengeViewState extends State<WeeklyChallengeView> {
   final TextEditingController _commentController = TextEditingController();
   final UserActivityService _userActivityService = UserActivityService();
   bool _isCheckedIn = false;
+  int _completedCount = 0;
+  bool _isLoadingStats = true;
   
 
 @override
@@ -30,6 +32,8 @@ void initState() {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final viewModel = Provider.of<WeeklyChallengeViewModel>(context, listen: false);
     viewModel.loadWeeklyChallenge();
+    viewModel.loadUserWeeklyChallengeStats();
+
   });
 }
 
@@ -140,7 +144,35 @@ void _loadCheckIn(event) async {
                     Text(event.formattedCost),
                   ],
                 ),
+                const SizedBox(height: 20),
+                const Divider(),
 
+                
+                viewModel.isLoadingStats
+                    ? const Center(child: CircularProgressIndicator())
+                    : Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6389E2).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.insights, color: Color(0xFF6389E2)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "You’ve completed ${viewModel.completedCount} weekly challenges in the last 30 days.",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                 const SizedBox(height: 20),
                 const Divider(),
                 ElevatedButton(
@@ -159,6 +191,7 @@ void _loadCheckIn(event) async {
                           const SnackBar(content: Text("Challenge marked as completed!")),
                         );
                         _loadCheckIn(event);
+                        viewModel.loadUserWeeklyChallengeStats();
                       }
                     },
 

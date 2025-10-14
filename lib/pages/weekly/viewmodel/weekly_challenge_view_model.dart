@@ -5,11 +5,19 @@ import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/util/event_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:app_flutter/util/analytics_service.dart';
+
 
 class WeeklyChallengeViewModel extends ChangeNotifier {
   final EventsService _eventsService = EventsService();
   final CommentService _commentService = CommentService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AnalyticsService _analyticsService = AnalyticsService();
+
+  int _completedCount = 0;
+  bool _isLoadingStats = false;
+  int get completedCount => _completedCount;
+  bool get isLoadingStats => _isLoadingStats;
 
   Event? _weeklyEvent;
   List<Comment> _comments = [];
@@ -67,7 +75,28 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+    await loadUserWeeklyChallengeStats();
   }
+
+  Future<void> loadUserWeeklyChallengeStats() async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  try {
+    _isLoadingStats = true;
+    notifyListeners();
+
+    final count = await _analyticsService.getWeeklyChallengesCompletedLast30Days(user.uid);
+    _completedCount = count;
+  } catch (e) {
+    debugPrint("Error loading weekly challenge stats: $e");
+    _completedCount = 0;
+  } finally {
+    _isLoadingStats = false;
+    notifyListeners();
+  }
+}
+
 
   
 }
