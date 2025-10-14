@@ -75,27 +75,27 @@ class _ProfileSection extends StatelessWidget {
               : AssetImage('assets/images/default_profile.png') as ImageProvider,
         ),
         SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
+       Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome',
+                softWrap: true,
+                style: TextStyle(color: Colors.white, fontSize: 14),
               ),
-            ),
-            Text(
-              'Hi, $userName!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+              Text(
+                'Hi, $userName!',
+                maxLines: 1,  
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+      ]
     );
   }
 }

@@ -149,7 +149,9 @@ class MainPageState extends State<MainPage> {
           Navigator(
             key: _navigatorKeys[1],
             onGenerateRoute: (settings) {
-              final args = settings.arguments as Map<String, dynamic>?;
+              final args = (settings.arguments is Map)
+                ? Map<String, dynamic>.from(settings.arguments as Map)
+                : null;
               final startWithMap = args?['startWithMapView'] as bool? ?? false;
               return MaterialPageRoute(
                 builder: (_) => EventsMapListView(startWithMapView: startWithMap),
