@@ -1,5 +1,6 @@
 // lib/util/analytics_service.dart
 import 'package:app_flutter/util/firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 
@@ -73,6 +74,17 @@ class AnalyticsService {
       'challenge_id': challengeId,
       'timestamp': now,
     });
+
+    await firestore.collection('user_activities').add(
+      {
+        'user_id': userId,
+        'event_id': challengeId,
+        'time': now,
+        'source': "manual",
+        'type' : "weekly challenge",
+        "with_friends": false,
+      }
+    );
   }
 
 
@@ -82,12 +94,17 @@ class AnalyticsService {
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
 
     final querySnapshot = await firestore
-        .collection('weekly_challenge_completions')
-        .where('user_id', isEqualTo: userId)
-        .where('timestamp', isGreaterThanOrEqualTo: thirtyDaysAgo)
-        .get();
+      .collection('weekly_challenge_completions')
+      .where('user_id', isEqualTo: userId)
+      .get();
 
-    return querySnapshot.docs.length;
+    final filtered = querySnapshot.docs.where((doc) {
+    final ts = (doc['timestamp'] as Timestamp).toDate();
+    return ts.isAfter(thirtyDaysAgo);
+  }).toList();
+
+
+    return filtered.length;
   }
 
   
