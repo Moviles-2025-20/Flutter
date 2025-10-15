@@ -1,4 +1,6 @@
 import 'package:app_flutter/main.dart';
+import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
+import 'package:app_flutter/pages/login/views/register.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -41,10 +43,22 @@ class _LoginState extends State<Login> {
       // Verificar si es primera vez
       if (viewModel.isFirstTimeUser) {
         // Primera vez: ir a onboarding o bienvenida
-        Navigator.pushReplacementNamed(context, '/register');
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => RegisterViewModel(),
+              child: RegisterView(uid: viewModel.user!.uid),
+            ),
+          ),
+          (Route<dynamic> route) => false, // Elimina todas las rutas
+        );
       } else {
         // Ya registrado: ir a home
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (Route<dynamic> route) => false, // Elimina todas las rutas anteriores
+        );
       }
     });
   }
