@@ -68,7 +68,11 @@ class AuthViewModel extends ChangeNotifier {
 
   // Login methods
   Future<void> loginWithGoogle() async {
-    await _login(AuthProviderType.google);
+    try{
+      await _login(AuthProviderType.google);
+    }catch(e){
+      print("Error al iniciar sesion con Google: ");
+    }
   }
 
   // Add login with GitHub
@@ -104,7 +108,9 @@ class AuthViewModel extends ChangeNotifier {
       await _checkFirstTimeUser();
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      print("Error at login $e");
+
+      _error = ("Oops! Something went wrong while signing in. Try again.");
       _user = null;
     } finally {
       _isLoading = false;
@@ -122,12 +128,20 @@ class AuthViewModel extends ChangeNotifier {
       await _authService.logout();
       _user = null;
     } catch (e) {
-      _error = e.toString();
+      print("Error in the logout: $e");
+      _error = "There was a problem during the logout.";
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
+  void markUserAsNotFirstTime() {
+    _isFirstTimeUser = false;
+    notifyListeners();
+  }
+
+
 
 
   @override
