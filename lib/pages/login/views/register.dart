@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/register_viewmodel.dart';
 
 class RegisterView extends StatefulWidget {
@@ -313,11 +314,18 @@ class _RegisterViewState extends State<RegisterView> {
                     try {
                       await viewModel.saveUserData(widget.uid);
                       if (!mounted) return;
+                      context.read<AuthViewModel>().markUserAsNotFirstTime();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content: Text("Data saved successfully")),
                       );
-                      Navigator.pushReplacementNamed(context, '/home');
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/home',
+                        ModalRoute.withName('/start/login'),
+                      );
+
+
+
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Error: $e")),

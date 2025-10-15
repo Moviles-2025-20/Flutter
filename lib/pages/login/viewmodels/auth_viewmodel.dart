@@ -136,6 +136,13 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  void markUserAsNotFirstTime() {
+    _isFirstTimeUser = false;
+    notifyListeners();
+  }
+
+
+
 
   @override
   void dispose() {

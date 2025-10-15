@@ -37,28 +37,22 @@ class _LoginState extends State<Login> {
     
     _hasRedirected = true;
     
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       
       // Verificar si es primera vez
       if (viewModel.isFirstTimeUser) {
-        // Primera vez: ir a onboarding o bienvenida
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (_) => RegisterViewModel(),
-              child: RegisterView(uid: viewModel.user!.uid),
-            ),
-          ),
-          (Route<dynamic> route) => false, // Elimina todas las rutas
-        );
-      } else {
-        // Ya registrado: ir a home
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (Route<dynamic> route) => false, // Elimina todas las rutas anteriores
+          '/register',
+          ModalRoute.withName('/start/login'),
+          arguments: viewModel.user!.uid,
         );
+
+
+      } else {
+        Navigator.of(context).pushReplacementNamed('/home');
+        print('Navigator stack después de ir a home: ${Navigator.of(context).canPop()}');
+
       }
     });
   }
