@@ -10,10 +10,10 @@ class NotificationsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "Notifications",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF3C5BA9),
+        backgroundColor: const Color(0xFF6389E2),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16.0),
