@@ -45,21 +45,39 @@ class RegisterViewModel extends ChangeNotifier {
 
 
   Future<void> saveUserData(String uid) async {
+    String? errorMessage;
+
     final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
     print("1. Porcentaje:");
     print( indoorOutdoorScore);
 
-    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
-    
-    if (name == null ||
-        email == null ||
-        major == null ||
-        gender == null ||
-        birthDate == null ||
-        favoriteCategories.isEmpty ||
-        freeTimeSlots.isEmpty) {
-      throw Exception("You must completed all fields");
+    //  Validar rango de edad antes de guardar
+    final now = DateTime.now();
+    final age = now.year - birthDate!.year -
+        ((now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) ? 1 : 0);
+
+    if (age < 10 || age > 120) {
+      throw Exception("Age must be between 10 and 120 years");
     }
+
+    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
+
+    final missingFields = <String>[];
+
+    if (name == null || name!.trim().isEmpty) missingFields.add("name");
+    if (email == null || email!.trim().isEmpty) missingFields.add("email");
+    if (major == null || major!.trim().isEmpty) missingFields.add("major");
+    if (gender == null) missingFields.add("gender");
+    if (birthDate == null) missingFields.add("birth date");
+    if (favoriteCategories.isEmpty) missingFields.add("preferences");
+    if (freeTimeSlots.isEmpty) missingFields.add("free time slots");
+
+    if (missingFields.isNotEmpty) {
+      errorMessage = "Please complete the following fields: ${missingFields.join(", ")}";
+      notifyListeners(); // Notifica a la vista que hay un error
+      throw Exception(errorMessage); // También lanza la excepción para que pueda ser atrapada en la UI
+    }
+
 
 
 

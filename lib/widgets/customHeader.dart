@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../pages/notification.dart';
+
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
   final String profileImagePath;
@@ -113,13 +115,14 @@ class _NotificationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(
-        Icons.notifications_outlined,
-        color: Colors.white,
-        size: 35,
-      ),
+      icon: const Icon(Icons.notifications_none, color: Colors.white),
       onPressed: () {
-        Navigator.pushNamed(context, '/notifications');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NotificationsPage(),
+          ),
+        );
       },
     );
   }

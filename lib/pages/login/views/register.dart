@@ -96,16 +96,53 @@ class _RegisterViewState extends State<RegisterView> {
               TextFormField(
                 controller: _nameController,
                 decoration: _inputDecoration("Name"),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 onChanged: (v) => viewModel.name = v,
-                validator: (v) => v!.isEmpty ? "Mandatory field" : null,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return "Name is required";
+                  }
+
+                  // Bloquear emojis
+                  final emojiRegex = RegExp(
+                      r'[\u{1F600}-\u{1F64F}'
+                      r'\u{1F300}-\u{1F5FF}'
+                      r'\u{1F680}-\u{1F6FF}'
+                      r'\u{2600}-\u{26FF}'
+                      r'\u{2700}-\u{27BF}]',
+                      unicode: true);
+
+                  if (emojiRegex.hasMatch(v)) {
+                    return "Name must not contain an emoji";
+                  }
+
+                  if (v.trim().split(" ").every((word) => word.isEmpty)) {
+                    return "Name cannot be only spaces";
+                  }
+
+                  return null;
+                },
               ),
+
+
               const SizedBox(height: 12),
               // Email
               TextFormField(
                 controller: _emailController,
                 decoration: _inputDecoration("Email"),
                 onChanged: (v) => viewModel.email = v,
-                validator: (v) => v!.isEmpty ? "Mandatory field" : null,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return "Email is required";
+                  }
+
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(v.trim())) {
+                    return "Enter a valid email address";
+                  }
+                  return null;
+                },
+
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -131,11 +168,15 @@ class _RegisterViewState extends State<RegisterView> {
               ElevatedButton(
                 style: _blueButtonStyle(),
                 onPressed: () async {
+                  final now = DateTime.now();
+                  final maxDate = DateTime(now.year - 10, now.month, now.day); // edad mínima 10
+                  final minDate = DateTime(now.year - 120, now.month, now.day); // edad máxima 120
+
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: DateTime(2000),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
+                    initialDate: DateTime(now.year - 20),
+                    firstDate: minDate,
+                    lastDate: maxDate,
                   );
                   if (picked != null) {
                     setState(() {
@@ -262,6 +303,16 @@ class _RegisterViewState extends State<RegisterView> {
                   if (_selectedDay != null &&
                       _startTime != null &&
                       _endTime != null) {
+
+                    final startMinutes = _startTime!.hour * 60 + _startTime!.minute;
+                    final endMinutes = _endTime!.hour * 60 + _endTime!.minute;
+
+                    if (endMinutes - startMinutes < 30) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("The end time must be at least 30 minutes after the start")),
+                      );
+                      return;
+                    }
                     viewModel.freeTimeSlots.add({
                       "day": _selectedDay!,
                       "start": _startTime!.format(context),
@@ -310,31 +361,43 @@ class _RegisterViewState extends State<RegisterView> {
               ElevatedButton(
                 style: _pinkButtonStyle(),
                 onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    try {
-                      await viewModel.saveUserData(widget.uid);
-                      if (!mounted) return;
-                      context.read<AuthViewModel>().markUserAsNotFirstTime();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Data saved successfully")),
-                      );
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/home',
-                        ModalRoute.withName('/start/login'),
-                      );
+                  //  Ejecuta todas las validaciones del formulario
+                  if (!_formKey.currentState!.validate()) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Please fix the highlighted errors before saving."),
+                      ),
+                    );
+                    return;
+                  }
 
+                  try {
+                    await viewModel.saveUserData(widget.uid);
+                    if (!mounted) return;
 
+                    context.read<AuthViewModel>().markUserAsNotFirstTime();
 
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Error: $e")),
-                      );
-                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Data saved successfully"),
+                      ),
+                    );
+
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/home',
+                      ModalRoute.withName('/start/login'),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error: $e"),
+                      ),
+                    );
                   }
                 },
                 child: const Text("Save"),
               ),
+
             ],
           ),
         ),
