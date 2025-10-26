@@ -49,19 +49,9 @@ class RegisterViewModel extends ChangeNotifier {
 
     final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
     print("1. Porcentaje:");
-    print( indoorOutdoorScore);
+    print(indoorOutdoorScore);
 
-    //  Validar rango de edad antes de guardar
-    final now = DateTime.now();
-    final age = now.year - birthDate!.year -
-        ((now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) ? 1 : 0);
-
-    if (age < 10 || age > 120) {
-      throw Exception("Age must be between 10 and 120 years");
-    }
-
-    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
-
+    // Validar campos requeridos primero
     final missingFields = <String>[];
 
     if (name == null || name!.trim().isEmpty) missingFields.add("name");
@@ -74,22 +64,32 @@ class RegisterViewModel extends ChangeNotifier {
 
     if (missingFields.isNotEmpty) {
       errorMessage = "Please complete the following fields: ${missingFields.join(", ")}";
-      notifyListeners(); // Notifica a la vista que hay un error
-      throw Exception(errorMessage); // También lanza la excepción para que pueda ser atrapada en la UI
+      notifyListeners();
+      throw Exception(errorMessage);
     }
 
+    // 🔹 Ya está validado que birthDate no sea null
+    final now = DateTime.now();
+    final age = now.year - birthDate!.year -
+        ((now.month < birthDate!.month ||
+            (now.month == birthDate!.month && now.day < birthDate!.day))
+            ? 1
+            : 0);
 
+    if (age < 10 || age > 120) {
+      throw Exception("Age must be between 10 and 120 years");
+    }
 
-
+    _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
 
     await _db.collection("users").doc(uid).set({
       "profile": {
         "name": name,
         "email": email,
-        "photo": photoUrl,   // <-- foto de Auth
+        "photo": photoUrl,
         "major": major,
         "gender": gender,
-        "age": DateTime.now().year - birthDate!.year,
+        "age": age,
         "created": FieldValue.serverTimestamp(),
         "last_active": FieldValue.serverTimestamp(),
       },
@@ -103,8 +103,8 @@ class RegisterViewModel extends ChangeNotifier {
     }, SetOptions(merge: true));
 
     _analytics.logOutdoorIndoorActivity(indoorOutdoorScore);
-    
   }
+
 }
 
 
