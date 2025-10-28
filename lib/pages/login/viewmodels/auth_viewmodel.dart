@@ -1,10 +1,16 @@
 import 'package:app_flutter/pages/login/models/auth_models.dart';
+import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
 import 'package:app_flutter/util/auth_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../util/local_DB_service.dart';
 
 
 class AuthViewModel extends ChangeNotifier {
@@ -36,7 +42,12 @@ class AuthViewModel extends ChangeNotifier {
             ? firebaseUser.providerData.first.providerId
             : 'unknown';
         _user = UserModel.fromFirebase(firebaseUser, providerId);
+        final registerVM = RegisterViewModel(authViewModel: this);
+        final localUserService = LocalUserService();
+        await localUserService.debugPrintUsers();
+        await registerVM.syncPendingUsers();
         await _checkFirstTimeUser();
+        _startConnectivityListener();
         await Future.delayed(const Duration(milliseconds: 500));
       } else {
         _user = null;
@@ -44,6 +55,21 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       notifyListeners();
+    });
+  }
+
+
+  void _startConnectivityListener() {
+    
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) async {
+      print("Cambio de conectividad detectado: $result");
+      if (result != ConnectivityResult.none && _user != null) {
+        print(" Intentando sincronizar datos del usuario: ${_user!.uid}");
+        final registerVM = RegisterViewModel(authViewModel: this);
+        final localUserService = LocalUserService();
+        await localUserService.debugPrintUsers();
+        await registerVM.syncPendingUsers();
+      }
     });
   }
 
@@ -105,6 +131,29 @@ class AuthViewModel extends ChangeNotifier {
       final providerId = userCredential.credential?.providerId ?? type.name;
       
       _user = UserModel.fromFirebase(userCredential.user!, providerId);
+
+      //  Guardar imagen en caché
+      final photoUrl = _user?.photoURL;
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        final file = await DefaultCacheManager().getSingleFile(photoUrl);
+        debugPrint('cache');
+
+        //  Copiar a directorio persistente
+        final appDir = await getApplicationDocumentsDirectory();
+        final savedImage = await file.copy('${appDir.path}/profile_${_user!.uid}.jpg');
+        debugPrint('imagen guardad');
+
+        //  Guardar ruta local en memoria
+        _user = UserModel(
+          uid: _user!.uid,
+          email: _user!.email,
+          displayName: _user!.displayName,
+          photoURL: savedImage.path, // ahora es ruta local
+          providerId: _user!.providerId,
+        );
+        debugPrint('FINISH');
+      }
+
       await _checkFirstTimeUser();
       _error = null;
     } catch (e) {

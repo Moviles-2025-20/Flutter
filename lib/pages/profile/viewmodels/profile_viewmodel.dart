@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../util/firebase_service.dart';
+import '../../../util/local_DB_service.dart';
 import '../models/user_model.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -9,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 class ProfileViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final localUserService = LocalUserService();
 
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
@@ -230,6 +233,18 @@ class ProfileViewModel extends ChangeNotifier {
 
       // Eliminar usuario de Authentication
       await user.delete();
+
+      //  Eliminar usuario de la base local
+      await localUserService.deleteUser(user.uid);
+      debugPrint("user eliminado local");
+
+      // Eliminar imagen cacheada
+      final appDir = await getApplicationDocumentsDirectory();
+      final imageFile = File('${appDir.path}/profile_${user.uid}.jpg');
+      if (await imageFile.exists()) {
+        await imageFile.delete();
+        debugPrint("Imagen cacheada eliminada");
+      }
 
       _currentUser = null;
       return true;

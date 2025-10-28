@@ -4,14 +4,15 @@ import '../pages/notification.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
-  final String profileImagePath;
   final VoidCallback onNotificationTap;
   final Function(String) onSearchSubmitted;
+  final ImageProvider profileImage;
+
 
   const CustomHeader({
     Key? key,
     required this.userName,
-    required this.profileImagePath,
+    required this.profileImage,
     required this.onNotificationTap,
     required this.onSearchSubmitted,
   }) : super(key: key);
@@ -40,7 +41,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                     Expanded(child: _ProfileSection(
                       userName: userName,
-                      profileImagePath: profileImagePath,
+                      profileImage: profileImage,
                     ),
                   ),
                   
@@ -61,11 +62,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
 
 class _ProfileSection extends StatelessWidget {
   final String userName;
-  final String profileImagePath;
+  final ImageProvider profileImage;
+
 
   const _ProfileSection({
     required this.userName,
-    required this.profileImagePath,
+    required this.profileImage,
   });
 
   @override
@@ -74,10 +76,7 @@ class _ProfileSection extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 25,
-          backgroundImage: profileImagePath.isNotEmpty
-              ? NetworkImage(profileImagePath)
-              : AssetImage('assets/images/default_profile.png') as ImageProvider,
-        ),
+          backgroundImage: profileImage),
         SizedBox(width: 12),
         Expanded(
           child: Column(
