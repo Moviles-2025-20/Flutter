@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_flutter/main.dart';
 import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
@@ -27,15 +29,7 @@ class Home extends StatelessWidget {
         }
 
         final profilePhoto = profileViewModel.currentUser?.profile.photo;
-
-        String profileImagePath;
-        if (profilePhoto != null && profilePhoto.isNotEmpty) {
-          profileImagePath = profilePhoto.startsWith('http')
-              ? profilePhoto
-              : profilePhoto;
-        } else {
-          profileImagePath = 'assets/images/default_profile.png';
-        }
+        final profileImage = getProfileImage(profilePhoto);
 
         return Scaffold(
           backgroundColor: const Color(0xFFFEFAED),
@@ -43,7 +37,7 @@ class Home extends StatelessWidget {
             userName: profileViewModel.currentUser?.profile.name ?? 
                      user.displayName ?? 
                      "User",
-            profileImagePath: profileImagePath,
+            profileImage: profileImage,
             onNotificationTap: () {
               print('Notification tapped');
             },
@@ -121,5 +115,15 @@ class Home extends StatelessWidget {
           
       },
     );
+  }
+
+  ImageProvider getProfileImage(String? photoPath) {
+    if (photoPath == null || photoPath.isEmpty) {
+      return const AssetImage("assets/images/profileimg.png");
+    } else if (photoPath.startsWith('http')) {
+      return NetworkImage(photoPath);
+    } else {
+      return FileImage(File(photoPath));
+    }
   }
 }

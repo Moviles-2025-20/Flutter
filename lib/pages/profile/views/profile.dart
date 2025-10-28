@@ -286,11 +286,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: profile.photo != null && profile.photo!.isNotEmpty
-                              ? (profile.photo!.startsWith('http')
-                              ? NetworkImage(profile.photo!)
-                              : FileImage(File(profile.photo!)) as ImageProvider)
-                              : const AssetImage("assets/images/profileimg.png") as ImageProvider,
+                          backgroundImage:getProfileImage(profile.photo),
                         ),
                         Positioned(
                           bottom: 0,
@@ -509,6 +505,16 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  ImageProvider getProfileImage(String? photoPath) {
+    if (photoPath == null || photoPath.isEmpty) {
+      return const AssetImage("assets/images/profileimg.png");
+    } else if (photoPath.startsWith('http')) {
+      return NetworkImage(photoPath);
+    } else {
+      return FileImage(File(photoPath));
+    }
   }
 }
 

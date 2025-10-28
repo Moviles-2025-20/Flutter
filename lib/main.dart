@@ -78,10 +78,13 @@ class MyApp extends StatelessWidget {
           if (settings.name == '/register') {
             final uid = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (context) => ChangeNotifierProvider(
-                create: (_) => RegisterViewModel(),
-                child: RegisterView(uid: uid),
-              ),
+              builder: (context) {
+                final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                return ChangeNotifierProvider(
+                  create: (_) => RegisterViewModel(authViewModel: authViewModel),
+                  child: RegisterView(uid: uid),
+                );
+              },
             );
           }
           return null;
