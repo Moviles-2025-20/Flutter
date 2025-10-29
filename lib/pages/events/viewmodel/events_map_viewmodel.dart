@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -34,6 +37,27 @@ class EventsMapViewModel extends ChangeNotifier {
     return _defaultCenter;
   }
 
+  // Check internet connection
+    Future<bool> hasInternetConnection() async {
+      try {
+        // Check basic connectivity
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult == ConnectivityResult.none) {
+          return false;
+        }
+
+        // Verify real connection with timeout
+        final result = await InternetAddress.lookup('google.com').timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => [],
+        );
+        
+        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } catch (e) {
+        print('Error checking internet: $e');
+        return false;
+      }
+    }
   // Initialize with events
   void setEvents(List<Event> events) {
     _events = events;
@@ -47,6 +71,17 @@ class EventsMapViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+
+      // Check internet first
+      final hasInternet = await hasInternetConnection();
+      
+      if (!hasInternet) {
+        _errorMessage = 'No internet connection. Please check your connection and try again.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       final position = await _determinePosition();
       if (position != null) {
         _userPosition = LatLng(position.latitude, position.longitude);
@@ -54,7 +89,12 @@ class EventsMapViewModel extends ChangeNotifier {
         _createMarkers();
       }
     } catch (e) {
-      _errorMessage = 'Error al obtener ubicación: $e';
+      final hasInternet = await hasInternetConnection();
+      if (!hasInternet) {
+        _errorMessage = 'No internet connection. Unable to get location.';
+      } else {
+        _errorMessage = 'Problem when getting location.';
+      }
       print(_errorMessage);
     } finally {
       _isLoading = false;
