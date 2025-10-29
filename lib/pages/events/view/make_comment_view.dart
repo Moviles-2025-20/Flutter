@@ -45,6 +45,7 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
       rating: rating,
       imageFile: _selectedImage,
       userName: user?.displayName ?? 'Anonymous',
+      userId: user?.uid ?? '',
       avatar: user?.photoURL ?? '',
       
     );

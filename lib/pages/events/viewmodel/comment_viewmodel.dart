@@ -14,8 +14,10 @@ class CommentViewModel extends ChangeNotifier {
     required String description,
     required int rating,
     File? imageFile,
+    required String userId,
     required String userName,
     required String avatar,
+    
   }) async {
     try {
       String? imageUrl;
@@ -29,19 +31,21 @@ class CommentViewModel extends ChangeNotifier {
       }
 
       final commentData = {
+        "created": FieldValue.serverTimestamp(),
         "eventId": eventId,
+        "metadata": {
+          "image_url": imageUrl ?? '',
+          "text": description
+        },
         "title": title,
-        "description": description,
         "rating": rating,
-        "imageUrl": imageUrl ?? '',
-        "createdAt": FieldValue.serverTimestamp(),
-        "userName": userName,
+        "user_id": userId,
+        "user_Name": userName,
         "avatar": avatar,
+
       };
 
       await _firestore
-          .collection("events")
-          .doc(eventId)
           .collection("comments")
           .add(commentData);
       debugPrint("Guardando comentario en evento: ${eventId}");

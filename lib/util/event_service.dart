@@ -80,7 +80,7 @@ class EventsService {
 
       // Filtro por rating mínimo
       if (filters.minRating != null) {
-        if (event.stats.rating < filters.minRating!) return false;
+        if (event.stats.rating.isNotEmpty && (event.stats.rating.reduce((a, b) => a + b) / event.stats.rating.length) < filters.minRating!) return false;
       }
 
       return true;

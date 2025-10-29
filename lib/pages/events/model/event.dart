@@ -124,7 +124,7 @@ class EventSchedule {
 class EventStats {
   final int popularity;
   final int totalCompletions;
-  final double rating;
+  final List<double> rating;
 
   EventStats({
     required this.popularity,
@@ -136,7 +136,7 @@ class EventStats {
     return EventStats(
       popularity: json['popularity'] ?? 0,
       totalCompletions: json['total_completions'] ?? 0,
-      rating: (json['rating'] ?? 0).toDouble(),
+      rating: (json['rating'] ?? []).map<double>((r) => (r as num).toDouble()).toList(),
     );
   }
 
@@ -224,10 +224,10 @@ class Event {
   }
 
   // Helper getters
-  bool get isPositive => stats.rating >= 4.0 || stats.popularity > 50;
-  bool get isNeutral => stats.rating >= 2.5 && stats.rating < 4.0;
-  bool get isNegative => stats.rating < 2.5;
-  
+  bool get isPositive => stats.rating.isNotEmpty && (stats.rating.reduce((a, b) => a + b) / stats.rating.length) >= 4.0 || stats.popularity > 50;
+  bool get isNeutral => stats.rating.isNotEmpty && (stats.rating.reduce((a, b) => a + b) / stats.rating.length) >= 2.5 && (stats.rating.reduce((a, b) => a + b) / stats.rating.length) < 4.0;
+  bool get isNegative => stats.rating.isNotEmpty && (stats.rating.reduce((a, b) => a + b) / stats.rating.length) < 2.5;
+
   String get formattedCost => metadata.cost.formatted;
   
   String get durationFormatted {

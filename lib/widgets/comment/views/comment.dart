@@ -41,6 +41,7 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
       rating: rating,
       imageFile: _selectedImage,
       userName: Provider.of<User>(context, listen: false).displayName ?? 'Anonymous',
+      userId: Provider.of<User>(context, listen: false).uid,
       avatar: Provider.of<User>(context, listen: false).photoURL ?? '',
     );
 
