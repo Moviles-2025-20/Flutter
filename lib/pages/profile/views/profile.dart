@@ -87,16 +87,32 @@ class _ProfilePageState extends State<ProfilePage> {
               final name = nameController.text;
               final major = majorController.text;
 
-              if (name.isNotEmpty) {
-                await viewModel.updateName(name);
-                await viewModel.updateMajor(major);
-              }
+              try {
+                if (name.isNotEmpty) {
+                  await viewModel.updateName(name);
+                  await viewModel.updateMajor(major);
+                }
 
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profile updated successfully")),
-                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Profile updated successfully")),
+                  );
+                }
+              } catch (e) {
+                //  Captura la excepción lanzada con throw StateError
+                if (context.mounted) {
+                  Navigator.pop(context); // Cierra el diálogo incluso si hay error
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        viewModel.error ?? "Error updating profile",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
               }
             },
             child: const Text("Save"),
@@ -159,10 +175,36 @@ class _ProfilePageState extends State<ProfilePage> {
               TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
                 onPressed: () async {
-                  for (var category in selected) {
-                    await viewModel.addFavoriteCategory(category);
+                  try {
+                    for (var category in selected) {
+                      await viewModel.addFavoriteCategory(category);
+                    }
+
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Categories added successfully")),
+                      );
+                    }
+
+                  } on StateError catch (e) {
+                    //  Captura el error lanzado en el ViewModel (sin conexión, etc.)
+                    if (context.mounted) {
+                      Navigator.pop(context); // Cierra el diálogo
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                    }
+
+                  } catch (e) {
+                    // Cualquier otro error inesperado
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Error adding categories")),
+                      );
+                    }
                   }
-                  if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text("Add"),
               ),
@@ -474,7 +516,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       }
                       return;
                     }
-                    await authViewModel.logout();
+                    await authViewModel.logout(context);
+
                     if (!mounted) return;
                     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
                       '/start/login',
@@ -526,8 +569,34 @@ class _ProfilePageState extends State<ProfilePage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              await viewModel.removeFavoriteCategory(category);
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await viewModel.removeFavoriteCategory(category);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("'$category' removed successfully")),
+                  );
+                }
+
+              } on StateError catch (e) {
+                // Maneja el error lanzado en el ViewModel (por ejemplo: sin conexión)
+                if (context.mounted) {
+                  Navigator.pop(context); // Cierra el diálogo
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.message)),
+                  );
+                }
+
+              } catch (e) {
+                // Otros errores no controlados
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Error removing category")),
+                  );
+                }
+              }
             },
             child: const Text("Remove", style: TextStyle(color: Colors.white)),
           ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -37,104 +39,117 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final uid = user.uid;
-
-      // 1. load cache
-      String? cachedPhotoPath;
-      final appDir = await getApplicationDocumentsDirectory();
-      final cachedImage = File('${appDir.path}/profile_$uid.jpg');
-      if (await cachedImage.exists()) {
-        cachedPhotoPath = cachedImage.path;
-        debugPrint("Imagen cacheada encontrada: $cachedPhotoPath");
-      }
-
-      // 2. Intentar cargar nombre desde Firebase Auth (si lo guardaste ahí)
-      //final displayName = user.displayName;
-
-      // 3. Intentar cargar desde SQLite
-      final localUsers = await localUserService.getUsers();
-      final localUser = localUsers.firstWhere(
-            (u) => u['id'] == uid,
-        orElse: () => {},
-      );
-
-      if (localUser.isNotEmpty) {
-        debugPrint("Cargando desde SQLite");
-        final userFromLocal = UserModel(
-          uid: localUser['id'],
-          profile: Profile(
-            name: localUser['name'],
-            email: localUser['email'],
-            city: localUser['city'],
-            gender: localUser['gender'],
-            age: localUser['age'] ?? 0,
-            major: localUser['major'],
-            photo: cachedPhotoPath ?? localUser['photo'],
-            created: localUser['createdAt'] != null
-                ? DateTime.parse(localUser['createdAt'])
-                : null,
-            lastActive: null, // SQLite no guarda esto
-          ),
-          preferences: Preferences(
-            favoriteCategories: (localUser['favoriteCategories'] as String)
-                .split(',')
-                .where((e) => e.isNotEmpty)
-                .toList(),
-            indoorOutdoorScore: localUser['indoorOutdoorScore'] ?? 0,
-            freeTimeSlots: (localUser['freeTimeSlots'] as String)
-                .split(',')
-                .map((s) {
-              final parts = s.split('-');
-              if (parts.length == 3) {
-                return FreeTimeSlot(
-                  day: parts[0],
-                  start: parts[1],
-                  end: parts[2],
-                );
-              } else {
-                return FreeTimeSlot(day: '', start: '', end: '');
-              }
-            })
-                .toList(),
-
-          ),
-          stats: null, // Not save in sqlite
-        );
-
-        _currentUser = userFromLocal;
-        notifyListeners(); // show local
-      }
-
-      // 4. check network
-      final connectivity = await Connectivity().checkConnectivity();
-      final hasInternet = connectivity != ConnectivityResult.none;
-      if (!hasInternet) {
-        debugPrint("Sin conexión. Usando solo cache + local.");
-        return;
-      }
-
-      // 5. load from Firestore
-      final doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists && doc.data() != null) {
-        debugPrint("Cargando desde Firebase");
-
-        _currentUser = UserModel.fromFirestore(user.uid, doc.data()!);
-
-        // Actualizar last_active
-        await _updateLastActive(user.uid);
-      } else {
-        _error = "User not found";
-      }
+      await Future.any([
+        _loadUserDataInternal(user.uid),
+        Future.delayed(const Duration(seconds: 5), () {
+          throw TimeoutException("Timeout al cargar datos del usuario");
+        }),
+      ]);
     } catch (e) {
-      _error = "Error loading data: $e";
+      _error = "There is no network or local data save for this user";
       debugPrint("Error loading user data: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _loadUserDataInternal(String uid) async{
+
+    // 1. load cache
+    String? cachedPhotoPath;
+    final appDir = await getApplicationDocumentsDirectory();
+    final cachedImage = File('${appDir.path}/profile_$uid.jpg');
+    if (await cachedImage.exists()) {
+      cachedPhotoPath = cachedImage.path;
+      debugPrint("Imagen cacheada encontrada: $cachedPhotoPath");
+    }
+
+
+
+    // 2. Intentar cargar desde SQLite
+    final localUsers = await localUserService.getUsers();
+    final localUser = localUsers.firstWhere(
+          (u) => u['id'] == uid,
+      orElse: () => {},
+    );
+
+    if (localUser.isNotEmpty) {
+      debugPrint("Cargando desde SQLite");
+      final userFromLocal = UserModel(
+        uid: localUser['id'],
+        profile: Profile(
+          name: localUser['name'],
+          email: localUser['email'],
+          city: localUser['city'],
+          gender: localUser['gender'],
+          age: localUser['age'] ?? 0,
+          major: localUser['major'],
+          photo: cachedPhotoPath ?? localUser['photo'],
+          created: localUser['createdAt'] != null
+              ? DateTime.parse(localUser['createdAt'])
+              : null,
+          lastActive: null, // SQLite no guarda esto
+        ),
+        preferences: Preferences(
+          favoriteCategories: (localUser['favoriteCategories'] as String)
+              .split(',')
+              .where((e) => e.isNotEmpty)
+              .toList(),
+          indoorOutdoorScore: localUser['indoorOutdoorScore'] ?? 0,
+          freeTimeSlots: (localUser['freeTimeSlots'] as String)
+              .split(',')
+              .map((s) {
+            final parts = s.split('-');
+            if (parts.length == 3) {
+              return FreeTimeSlot(
+                day: parts[0],
+                start: parts[1],
+                end: parts[2],
+              );
+            } else {
+              return FreeTimeSlot(day: '', start: '', end: '');
+            }
+          })
+              .toList(),
+
+        ),
+        stats: null, // Not save in sqlite
+      );
+
+      _currentUser = userFromLocal;
+      notifyListeners(); // show local
+    }
+
+    // 3. check network
+    final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+    if (!hasInternet) {
+      debugPrint("Sin conexión. Usando solo cache + local.");
+
+      if (_currentUser == null) {
+        _error = "No connection and no local data for this user.";
+        notifyListeners();
+      }
+
+      return;
+    }
+
+    // 4. load from Firestore
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .get();
+
+    if (doc.exists && doc.data() != null) {
+      debugPrint("Cargando desde Firebase");
+
+      _currentUser = UserModel.fromFirestore(uid, doc.data()!);
+
+      // Actualizar last_active
+      await _updateLastActive(uid);
+    } else {
+      _error = "User not found";
     }
   }
 
@@ -151,7 +166,20 @@ class ProfileViewModel extends ChangeNotifier {
 
   /// Actualizar nombre del usuario
   Future<void> updateName(String newName) async {
-    if (_currentUser == null) return;
+    final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+    final localUsers = await localUserService.getUsers();
+    final isLocalUser = localUsers.any((u) => u['id'] == _currentUser?.uid);
+
+
+      if (!hasInternet && !isLocalUser) {
+        _error = "There is no connection and the user has no local data. No changes can be made.";
+        notifyListeners();
+        throw StateError(_error!); // Corta TODO el flujo, incluidos microtasks futuros
+
+      }
+
+
 
     _currentUser = _currentUser!.copyWith(
       profile: _currentUser!.profile.copyWith(name: newName),
@@ -165,8 +193,7 @@ class ProfileViewModel extends ChangeNotifier {
         "synced": 0,
       });
 
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity != ConnectivityResult.none) {
+      if (hasInternet)  {
         try {
           await _firestore.collection('users').doc(_currentUser!.uid).update({
             'profile.name': newName,
@@ -181,7 +208,17 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
   Future<void> updateMajor(String major) async {
-    if (_currentUser == null) return;
+    final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+    final localUsers = await localUserService.getUsers();
+    final isLocalUser = localUsers.any((u) => u['id'] == _currentUser?.uid);
+
+    if (!hasInternet && !isLocalUser) {
+      _error = "There is no connection and the user has no local data. No changes can be made.";
+      notifyListeners();
+      throw StateError(_error!); // Corta TODO el flujo, incluidos microtasks futuros
+
+    }
 
     _currentUser = _currentUser!.copyWith(
       profile: _currentUser!.profile.copyWith(major: major),
@@ -193,8 +230,7 @@ class ProfileViewModel extends ChangeNotifier {
       "synced": 0,
     });
 
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity != ConnectivityResult.none) {
+    if (hasInternet)  {
 
     try {
       await _firestore.collection('users').doc(_currentUser!.uid).update({
@@ -248,6 +284,17 @@ class ProfileViewModel extends ChangeNotifier {
 
   /// Agregar categoría favorita
   Future<void> addFavoriteCategory(String category) async {
+    final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+    final localUsers = await localUserService.getUsers();
+    final isLocalUser = localUsers.any((u) => u['id'] == _currentUser?.uid);
+
+    if (!hasInternet && !isLocalUser) {
+      _error = "There is no connection and the user has no local data. No changes can be made.";
+      notifyListeners();
+      throw StateError(_error!); // Corta TODO el flujo, incluidos microtasks futuros
+
+    }
     // 1. Crear la nueva lista actualizada
     final updatedList = [
       ..._currentUser!.preferences.favoriteCategories,
@@ -269,8 +316,7 @@ class ProfileViewModel extends ChangeNotifier {
         "synced": 0,
       });
 
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity != ConnectivityResult.none) {
+      if (hasInternet) {
         try {
           await _firestore.collection('users').doc(_currentUser!.uid).update({
             'preferences.favorite_categories': FieldValue.arrayUnion([category]),
@@ -286,6 +332,20 @@ class ProfileViewModel extends ChangeNotifier {
 
   /// Eliminar categoría favorita
   Future<void> removeFavoriteCategory(String category) async {
+
+    final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+
+// Verificar si el usuario actual tiene respaldo local
+    final localUsers = await localUserService.getUsers();
+    final isLocalUser = localUsers.any((u) => u['id'] == _currentUser?.uid);
+
+    if (!hasInternet && !isLocalUser) {
+      _error = "There is no connection and the user has no local data. No changes can be made.";
+      notifyListeners();
+      throw StateError(_error!); // Corta TODO el flujo, incluidos microtasks futuros
+
+    }
     final updatedList = _currentUser!.preferences.favoriteCategories
         .where((c) => c != category)
         .toList();
@@ -304,8 +364,7 @@ class ProfileViewModel extends ChangeNotifier {
         "synced": 0,
       });
 
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity != ConnectivityResult.none) {
+      if (hasInternet)  {
         try {
           await _firestore.collection('users').doc(_currentUser!.uid).update({
             'preferences.favorite_categories': FieldValue.arrayRemove([category]),
@@ -378,4 +437,11 @@ class ProfileViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  void clearUserData() {
+    _currentUser = null;
+    _error = null;
+    notifyListeners();
+  }
+
 }
