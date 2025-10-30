@@ -24,6 +24,8 @@ class UserModel {
       providerId: providerId,
     );
   }
+
+
 }
 
 enum AuthProviderType {

@@ -13,6 +13,20 @@ class UserModel {
     this.stats,
   });
 
+  UserModel copyWith({
+    Profile? profile,
+    Preferences? preferences,
+    Stats? stats,
+  }) {
+    return UserModel(
+      uid: uid,
+      profile: profile ?? this.profile,
+      preferences: preferences ?? this.preferences,
+      stats: stats ?? this.stats,
+    );
+  }
+
+
   factory UserModel.fromFirestore(String uid, Map<String, dynamic> data) {
     return UserModel(
       uid: uid,
@@ -53,6 +67,31 @@ class Profile {
     this.created,
     this.lastActive,
   });
+
+  Profile copyWith({
+    String? name,
+    String? email,
+    String? city,
+    String? gender,
+    int? age,
+    String? major,
+    String? photo,
+    DateTime? created,
+    DateTime? lastActive,
+  }) {
+    return Profile(
+      name: name ?? this.name,
+      email: email ?? this.email,
+      city: city ?? this.city,
+      gender: gender ?? this.gender,
+      age: age ?? this.age,
+      major: major ?? this.major,
+      photo: photo ?? this.photo,
+      created: created ?? this.created,
+      lastActive: lastActive ?? this.lastActive,
+    );
+  }
+
 
   factory Profile.fromMap(Map<String, dynamic> map) {
     return Profile(
@@ -99,6 +138,21 @@ class Preferences {
     this.indoorOutdoorScore = 0,
     this.freeTimeSlots = const [],
   });
+
+  Preferences copyWith({
+    List<String>? favoriteCategories,
+    List<String>? completedCategories,
+    int? indoorOutdoorScore,
+    List<FreeTimeSlot>? freeTimeSlots,
+  }) {
+    return Preferences(
+      favoriteCategories: favoriteCategories ?? this.favoriteCategories,
+      completedCategories: completedCategories ?? this.completedCategories,
+      indoorOutdoorScore: indoorOutdoorScore ?? this.indoorOutdoorScore,
+      freeTimeSlots: freeTimeSlots ?? this.freeTimeSlots,
+    );
+  }
+
 
   factory Preferences.fromMap(Map<String, dynamic> map) {
     final notifications = map['notifications'] as Map<String, dynamic>?;

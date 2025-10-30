@@ -100,4 +100,15 @@ class LocalUserService {
     );
   }
 
+  Future<void> updateUser(String uid, Map<String, dynamic> updates) async {
+    final db = await database;
+    await db.update(
+      'users',
+      updates,
+      where: 'id = ?',
+      whereArgs: [uid],
+    );
+  }
+
+
 }

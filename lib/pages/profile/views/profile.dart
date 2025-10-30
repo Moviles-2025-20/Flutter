@@ -2,6 +2,7 @@ import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_stats_view.dart';
 import 'package:app_flutter/pages/login/views/login.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -462,6 +463,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   onPressed: authViewModel.isLoading
                       ? null
                       : () async {
+                    final connectivity = await Connectivity().checkConnectivity();
+                    if (connectivity == ConnectivityResult.none) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This action cannot be performed because there is no internet."),
+                          ),
+                        );
+                      }
+                      return;
+                    }
                     await authViewModel.logout();
                     if (!mounted) return;
                     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
@@ -475,8 +487,25 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA9892), minimumSize: const Size(double.infinity, 40)),
-                  onPressed: () => _showDeleteAccountDialog(context, profileViewModel, authViewModel),
-                  child: const Text("Delete your account", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  onPressed: () async {
+                    final connectivity = await Connectivity().checkConnectivity();
+                    if (connectivity == ConnectivityResult.none) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This action cannot be performed because there is no internet."),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    _showDeleteAccountDialog(context, profileViewModel, authViewModel);
+                  },
+                  child: const Text(
+                    "Delete your account",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ],
             ),
