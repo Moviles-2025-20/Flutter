@@ -101,8 +101,7 @@ class RegisterViewModel extends ChangeNotifier {
       "age": age,
       "indoorOutdoorScore": indoorOutdoorScore,
       "favoriteCategories": favoriteCategories.join(','),
-      "freeTimeSlots": freeTimeSlots.map((
-          slot) => "${slot['start']}-${slot['end']}").join(','),
+      "freeTimeSlots": freeTimeSlots.map((slot) => "${slot['day']}-${slot['start']}-${slot['end']}").join(','),
       "createdAt": now.toIso8601String(),
       "synced": 0, //  marca como pendiente
     });
@@ -171,7 +170,13 @@ class RegisterViewModel extends ChangeNotifier {
             "notifications": {
               "free_time_slots": user['freeTimeSlots'].toString().split(',').map((e) {
                 final parts = e.split('-');
-                return {"start": parts[0], "end": parts[1]};
+                if (parts.length == 3) {
+                  return {
+                    "day": parts[0],
+                    "start": parts[1],
+                    "end": parts[2],
+                  };
+                }
               }).toList(),
             },
           },

@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,12 +37,91 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final uid = user.uid;
+
+      // 1. load cache
+      String? cachedPhotoPath;
+      final appDir = await getApplicationDocumentsDirectory();
+      final cachedImage = File('${appDir.path}/profile_$uid.jpg');
+      if (await cachedImage.exists()) {
+        cachedPhotoPath = cachedImage.path;
+        debugPrint("Imagen cacheada encontrada: $cachedPhotoPath");
+      }
+
+      // 2. Intentar cargar nombre desde Firebase Auth (si lo guardaste ahí)
+      //final displayName = user.displayName;
+
+      // 3. Intentar cargar desde SQLite
+      final localUsers = await localUserService.getUsers();
+      final localUser = localUsers.firstWhere(
+            (u) => u['id'] == uid,
+        orElse: () => {},
+      );
+
+      if (localUser.isNotEmpty) {
+        debugPrint("Cargando desde SQLite");
+        final userFromLocal = UserModel(
+          uid: localUser['id'],
+          profile: Profile(
+            name: localUser['name'],
+            email: localUser['email'],
+            city: localUser['city'],
+            gender: localUser['gender'],
+            age: localUser['age'] ?? 0,
+            major: localUser['major'],
+            photo: cachedPhotoPath ?? localUser['photo'],
+            created: localUser['createdAt'] != null
+                ? DateTime.parse(localUser['createdAt'])
+                : null,
+            lastActive: null, // SQLite no guarda esto
+          ),
+          preferences: Preferences(
+            favoriteCategories: (localUser['favoriteCategories'] as String)
+                .split(',')
+                .where((e) => e.isNotEmpty)
+                .toList(),
+            indoorOutdoorScore: localUser['indoorOutdoorScore'] ?? 0,
+            freeTimeSlots: (localUser['freeTimeSlots'] as String)
+                .split(',')
+                .map((s) {
+              final parts = s.split('-');
+              if (parts.length == 3) {
+                return FreeTimeSlot(
+                  day: parts[0],
+                  start: parts[1],
+                  end: parts[2],
+                );
+              } else {
+                return FreeTimeSlot(day: '', start: '', end: '');
+              }
+            })
+                .toList(),
+
+          ),
+          stats: null, // Not save in sqlite
+        );
+
+        _currentUser = userFromLocal;
+        notifyListeners(); // show local
+      }
+
+      // 4. check network
+      final connectivity = await Connectivity().checkConnectivity();
+      final hasInternet = connectivity != ConnectivityResult.none;
+      if (!hasInternet) {
+        debugPrint("Sin conexión. Usando solo cache + local.");
+        return;
+      }
+
+      // 5. load from Firestore
       final doc = await _firestore
           .collection('users')
           .doc(user.uid)
           .get();
 
       if (doc.exists && doc.data() != null) {
+        debugPrint("Cargando desde Firebase");
+
         _currentUser = UserModel.fromFirestore(user.uid, doc.data()!);
 
         // Actualizar last_active
@@ -73,77 +153,61 @@ class ProfileViewModel extends ChangeNotifier {
   Future<void> updateName(String newName) async {
     if (_currentUser == null) return;
 
-    _isLoading = true;
+    _currentUser = _currentUser!.copyWith(
+      profile: _currentUser!.profile.copyWith(name: newName),
+    );
     notifyListeners();
 
-    try {
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update({
-        'profile.name': newName,
+    // 2. Guardar y sincronizar en segundo plano
+    Future.microtask(() async {
+      await localUserService.updateUser(_currentUser!.uid, {
+        "name": newName,
+        "synced": 0,
       });
 
-      // Actualizar el modelo local
-      _currentUser = UserModel(
-        uid: _currentUser!.uid,
-        profile: Profile(
-          name: newName,
-          email: _currentUser!.profile.email,
-          city: _currentUser!.profile.city,
-          gender: _currentUser!.profile.gender,
-          age: _currentUser!.profile.age,
-          major: _currentUser!.profile.major,
-          photo: _currentUser!.profile.photo,
-          created: _currentUser!.profile.created,
-          lastActive: _currentUser!.profile.lastActive,
-        ),
-        preferences: _currentUser!.preferences,
-        stats: _currentUser!.stats,
-      );
-    } catch (e) {
-      _error = "Error al actualizar nombre: $e";
-      debugPrint("Error updating name: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity != ConnectivityResult.none) {
+        try {
+          await _firestore.collection('users').doc(_currentUser!.uid).update({
+            'profile.name': newName,
+          });
+          await localUserService.updateUser(_currentUser!.uid, {"synced": 1});
+        } catch (e) {
+          _error = "Error al sincronizar nombre: $e";
+          debugPrint("Error syncing name: $e");
+        }
+      }
+    });
   }
 
   Future<void> updateMajor(String major) async {
     if (_currentUser == null) return;
 
-    _isLoading = true;
+    _currentUser = _currentUser!.copyWith(
+      profile: _currentUser!.profile.copyWith(major: major),
+    );
     notifyListeners();
+    Future.microtask(() async {
+    await localUserService.updateUser(_currentUser!.uid, {
+      "major": major,
+      "synced": 0,
+    });
+
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity != ConnectivityResult.none) {
 
     try {
       await _firestore.collection('users').doc(_currentUser!.uid).update({
         'profile.major': major,
       });
 
-      _currentUser = UserModel(
-        uid: _currentUser!.uid,
-        profile: Profile(
-          name: _currentUser!.profile.name,
-          email: _currentUser!.profile.email,
-          city: _currentUser!.profile.city,
-          gender: _currentUser!.profile.gender,
-          age: _currentUser!.profile.age,
-          major: major,
-          photo: _currentUser!.profile.photo,
-          created: _currentUser!.profile.created,
-          lastActive: _currentUser!.profile.lastActive,
-        ),
-        preferences: _currentUser!.preferences,
-        stats: _currentUser!.stats,
-      );
+      await localUserService.updateUser(_currentUser!.uid, {"synced": 1});
     } catch (e) {
       _error = "Error al actualizar major: $e";
       debugPrint("Error updating major: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+    }
+    });
   }
 
 
@@ -184,40 +248,75 @@ class ProfileViewModel extends ChangeNotifier {
 
   /// Agregar categoría favorita
   Future<void> addFavoriteCategory(String category) async {
-    if (_currentUser == null) return;
+    // 1. Crear la nueva lista actualizada
+    final updatedList = [
+      ..._currentUser!.preferences.favoriteCategories,
+      category,
+    ];
 
-    try {
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update({
-        'preferences.favorite_categories': FieldValue.arrayUnion([category]),
+    // 2. Actualizar el modelo en memoria
+    _currentUser = _currentUser!.copyWith(
+      preferences: _currentUser!.preferences.copyWith(
+        favoriteCategories: updatedList,
+      ),
+    );
+    notifyListeners();
+
+    // 2. Guardar y sincronizar en segundo plano
+    Future.microtask(() async {
+      await localUserService.updateUser(_currentUser!.uid, {
+        "favoriteCategories": updatedList.join(','),
+        "synced": 0,
       });
 
-      await loadUserData(); // Recargar datos
-    } catch (e) {
-      _error = "Error al agregar categoría: $e";
-      debugPrint("Error adding category: $e");
-    }
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity != ConnectivityResult.none) {
+        try {
+          await _firestore.collection('users').doc(_currentUser!.uid).update({
+            'preferences.favorite_categories': FieldValue.arrayUnion([category]),
+          });
+          await localUserService.updateUser(_currentUser!.uid, {"synced": 1});
+        } catch (e) {
+          _error = "Error al agregar categoría: $e";
+          debugPrint("Error adding category: $e");
+        }
+      }
+    });
   }
 
   /// Eliminar categoría favorita
   Future<void> removeFavoriteCategory(String category) async {
-    if (_currentUser == null) return;
+    final updatedList = _currentUser!.preferences.favoriteCategories
+        .where((c) => c != category)
+        .toList();
 
-    try {
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update({
-        'preferences.favorite_categories': FieldValue.arrayRemove([category]),
+    _currentUser = _currentUser!.copyWith(
+      preferences: _currentUser!.preferences.copyWith(
+        favoriteCategories: updatedList,
+      ),
+    );
+    notifyListeners();
+
+    // 2. Guardar y sincronizar en segundo plano
+    Future.microtask(() async {
+      await localUserService.updateUser(_currentUser!.uid, {
+        "favoriteCategories": updatedList.join(','),
+        "synced": 0,
       });
 
-      await loadUserData(); // Recargar datos
-    } catch (e) {
-      _error = "Error al eliminar categoría: $e";
-      debugPrint("Error removing category: $e");
-    }
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity != ConnectivityResult.none) {
+        try {
+          await _firestore.collection('users').doc(_currentUser!.uid).update({
+            'preferences.favorite_categories': FieldValue.arrayRemove([category]),
+          });
+          await localUserService.updateUser(_currentUser!.uid, {"synced": 1});
+        } catch (e) {
+          _error = "Error al eliminar categoría: $e";
+          debugPrint("Error removing category: $e");
+        }
+      }
+    });
   }
 
   Future<bool> deleteAccount() async {
