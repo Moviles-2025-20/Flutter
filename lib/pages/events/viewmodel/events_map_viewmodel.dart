@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -14,6 +15,8 @@ class EventsMapViewModel extends ChangeNotifier {
   List<Event> _sortedEvents = [];
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasInternet = true;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   
   // Configuration
   final int _maxEventsToShow = 5;
@@ -25,6 +28,7 @@ class EventsMapViewModel extends ChangeNotifier {
   List<Event> get sortedEvents => _sortedEvents;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get hasInternet => _hasInternet;
   
   LatLng get mapCenter {
     if (_userPosition != null) return _userPosition!;
@@ -37,9 +41,46 @@ class EventsMapViewModel extends ChangeNotifier {
     return _defaultCenter;
   }
 
+  EventsMapViewModel() {
+    _startConnectivityListener();
+  }
+
+   void _startConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
+      print("Connectivity changed: $result");
+      
+      if (result == ConnectivityResult.none) {
+
+        print("No internet detected");
+        _hasInternet = false;
+        _errorMessage = 'No internet connection. Map is unavailable.';
+        notifyListeners();
+      } else {
+
+        print("Connection detected, verifying...");
+        final realConnection = await hasInternetConnection();
+        
+        if (realConnection && !_hasInternet) {
+
+          print("Internet recovered!");
+          _hasInternet = true;
+          _errorMessage = null;
+          _determinePosition();
+          notifyListeners();
+        } else if (!realConnection) {
+          print("Connected but no real internet");
+          _hasInternet = false;
+          _errorMessage = 'No internet connection. Map is unavailable.';
+          notifyListeners();
+        }
+      }
+    });
+  }
+
   // Check internet connection
     Future<bool> hasInternetConnection() async {
       try {
+        
         // Check basic connectivity
         final connectivityResult = await Connectivity().checkConnectivity();
         if (connectivityResult == ConnectivityResult.none) {
@@ -58,6 +99,8 @@ class EventsMapViewModel extends ChangeNotifier {
         return false;
       }
     }
+
+  
   // Initialize with events
   void setEvents(List<Event> events) {
     _events = events;
@@ -73,10 +116,12 @@ class EventsMapViewModel extends ChangeNotifier {
     try {
 
       // Check internet first
-      final hasInternet = await hasInternetConnection();
+      final internetAvailable = await hasInternetConnection();
       
-      if (!hasInternet) {
-        _errorMessage = 'No internet connection. Please check your connection and try again.';
+      _hasInternet = internetAvailable;
+      
+      if (!internetAvailable) {
+        _errorMessage = 'No internet connection. Map is unavailable.';
         _isLoading = false;
         notifyListeners();
         return;
@@ -110,7 +155,7 @@ class EventsMapViewModel extends ChangeNotifier {
     // Check if location services are enabled
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      _errorMessage = 'Los servicios de ubicación están desactivados';
+      _errorMessage = 'Location services not enabled.';
       return null;
     }
 
@@ -119,13 +164,13 @@ class EventsMapViewModel extends ChangeNotifier {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        _errorMessage = 'Permiso de ubicación denegado';
+        _errorMessage = 'User location denied';
         return null;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      _errorMessage = 'Permiso de ubicación denegado permanentemente';
+      _errorMessage = 'User location denied permanently.';
       return null;
     }
 
