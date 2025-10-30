@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:app_flutter/main.dart';
+import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
 import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
@@ -10,8 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/weekly/view/weekly_challenge_view.dart';
 
-import '../../widgets/recommendation_section.dart';
-import '../FreeTime/view/free_time_view.dart';
+import '../../../widgets/recommendation_section.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});

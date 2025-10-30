@@ -11,6 +11,13 @@ import '../util/firebase_service.dart';
 class RecommendationsSection extends StatelessWidget {
   RecommendationsSection({super.key});
   final FirebaseFirestore _firestore = FirebaseService.firestore;
+  final controller = RecommendationsController();
+
+  void Function(Map<String, dynamic>)? _onRecommendationsUpdated;
+
+  void setOnRecommendationsUpdated(void Function(Map<String, dynamic>) callback) {
+    _onRecommendationsUpdated = callback;
+  }
 
   Future<EventsModel.Event?> _getEventById(String eventId) async {
     try {
@@ -33,23 +40,137 @@ class RecommendationsSection extends StatelessWidget {
       return const Text("Please log in to see recommendations.");
     }
 
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle(title: "What's best for you"),
         const SizedBox(height: 10),
         FutureBuilder<Map<String, dynamic>?>(
-          future: RecommendationService().getRecommendations(user.uid),
+          future: controller.getRecommendations(user.uid),
           builder: (context, snapshot) {
+            // Loading state
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError || snapshot.data == null) {
-              return const Text("No recommendations available.");
-            } else {
-              final recs = snapshot.data!["recommendations"] as List<dynamic>;
-              if (recs.isEmpty) {
-                return const Text("No recommendations available.");
-              }
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text(
+                        'Loading recommendations...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            // Error state
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Error loading recommendations",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        snapshot.error.toString(),
+                        style: const TextStyle(color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            // No data state
+            if (snapshot.data == null) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "No recommendations available",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Check your Internet Connection.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Success state
+            final recs = snapshot.data!["recommendations"] as List<dynamic>;
+            
+            if (recs.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.recommend_outlined,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "No recommendations yet",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Check back later for personalized suggestions",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
 
               return Column(
                 children: recs.map((rec) {
@@ -104,10 +225,9 @@ class RecommendationsSection extends StatelessWidget {
                 }).toList(),
               );
             }
-          },
-        ),
-      ],
-    );
+          )
+          ],
+        );
   }
 }
 
