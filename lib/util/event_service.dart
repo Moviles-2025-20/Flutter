@@ -153,4 +153,34 @@ class EventsService {
       return [];
     }
   }
+
+  // Update rating of an event
+  Future<void> updateEventRating(String eventId, double newRating) async {
+    try {
+      final eventRef = _firestore.collection('events').doc(eventId);
+      final eventDoc = await eventRef.get();
+
+      if (!eventDoc.exists) {
+        throw Exception('Evento no encontrado');
+      }
+
+      final eventData = eventDoc.data() as Map<String, dynamic>;
+      final stats = eventData['stats'] as Map<String, dynamic>? ?? {};
+      final ratings = (stats['rating'] as List<dynamic>?)
+              ?.map<double>((r) => (r as num).toDouble())
+              .toList() ??
+          [];
+
+      ratings.add(newRating);
+
+      await eventRef.update({
+        'stats.rating': ratings,
+      });
+
+      print('Rating del evento actualizado correctamente');
+    } catch (e) {
+      print('Error al actualizar el rating del evento: $e');
+      throw Exception('Error al actualizar el rating del evento: $e');
+    }
+  }
 }

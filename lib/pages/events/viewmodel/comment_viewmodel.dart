@@ -1,18 +1,21 @@
 import 'dart:io';
+import 'package:app_flutter/util/event_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../util/firebase_service.dart';
 
 class CommentViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
+  final EventsService _eventsService = EventsService();
   Future<void> submitComment({
 
     required String eventId,
     required String title,
     required String description,
-    required int rating,
+    required double rating,
     File? imageFile,
     required String userId,
     required String userName,
@@ -48,6 +51,8 @@ class CommentViewModel extends ChangeNotifier {
       await _firestore
           .collection("comments")
           .add(commentData);
+
+      _eventsService.updateEventRating(eventId, rating);
       debugPrint("Guardando comentario en evento: ${eventId}");
       debugPrint(" Comentario guardado en Firestore");
     } catch (e) {

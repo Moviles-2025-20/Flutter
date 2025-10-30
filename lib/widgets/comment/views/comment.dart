@@ -38,7 +38,7 @@ class _MakeCommentPageState extends State<MakeCommentPage> {
       eventId: widget.eventId,
       title: titleController.text,
       description: descriptionController.text,
-      rating: rating,
+      rating: rating.toDouble(),
       imageFile: _selectedImage,
       userName: Provider.of<User>(context, listen: false).displayName ?? 'Anonymous',
       userId: Provider.of<User>(context, listen: false).uid,
