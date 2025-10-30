@@ -26,9 +26,6 @@ class RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageProvider = imagePath.startsWith('http')
-        ? NetworkImage(imagePath)
-        : AssetImage(imagePath) as ImageProvider;
 
     return GestureDetector(
       onTap: onTap,
@@ -78,15 +75,25 @@ class RecommendationCard extends StatelessWidget {
                   // Imagen - 35%
                   Expanded(
                     flex: 35,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(12),
-                        ),
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                        ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(12),
+                      ),
+                      child: Image(
+                        image: imagePath.startsWith('http')
+                            ? NetworkImage(imagePath)
+                            : AssetImage(imagePath) as ImageProvider,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            'assets/images/event.jpg',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          );
+                        },
                       ),
                     ),
                   ),

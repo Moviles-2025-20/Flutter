@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
@@ -10,13 +11,121 @@ import 'dart:io';
 class RecommendationsController {
   final RecommendationService _service = RecommendationService();
   final RecommendationsStorageService _storage = RecommendationsStorageService();
+  
+  // Connectivity listener
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  bool _hasInternet = true;
+  
+  // Callbacks
   void Function(Map<String, dynamic> freshData)? _onRecommendationsUpdated;
+  void Function(bool hasConnection)? _onConnectivityChanged;
+  
+  // Pending refresh queue
+  final Set<String> _pendingRefreshes = {};
+
+  RecommendationsController() {
+    _startConnectivityListener();
+  }
+
+  // ============== CONNECTIVITY LISTENER ==============
+
+  void _startConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
+      debugPrint('Connectivity changed: $result');
+      
+      final wasOffline = !_hasInternet;
+      
+      if (result == ConnectivityResult.none) {
+        // Lost connection
+        debugPrint('Internet connection lost');
+        _hasInternet = false;
+        _onConnectivityChanged?.call(false);
+      } else {
+        // Potentially gained connection - verify real connectivity
+        debugPrint('Connection detected, verifying...');
+        final realConnection = await _verifyInternetConnection();
+        
+        if (realConnection && !_hasInternet) {
+          // Internet recovered
+          debugPrint('Internet connection recovered!');
+          _hasInternet = true;
+          _onConnectivityChanged?.call(true);
+          
+          // If was offline, process pending refreshes
+          if (wasOffline) {
+            _processPendingRefreshes();
+          }
+        } else if (!realConnection) {
+          // False positive - still no real internet
+          debugPrint('Connected but no real internet');
+          _hasInternet = false;
+          _onConnectivityChanged?.call(false);
+        }
+      }
+    });
+    
+    // Check initial connectivity
+    _checkInitialConnectivity();
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    if (result == ConnectivityResult.none) {
+      _hasInternet = false;
+      _onConnectivityChanged?.call(false);
+    } else {
+      _hasInternet = await _verifyInternetConnection();
+      _onConnectivityChanged?.call(_hasInternet);
+    }
+  }
+
+  Future<bool> _verifyInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com').timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => [],
+      );
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error verifying internet: $e');
+      return false;
+    }
+  }
+
+  void _processPendingRefreshes() {
+    if (_pendingRefreshes.isEmpty) return;
+    
+    debugPrint('Processing ${_pendingRefreshes.length} pending refreshes');
+    
+    final userIds = List<String>.from(_pendingRefreshes);
+    _pendingRefreshes.clear();
+    
+    for (final userId in userIds) {
+      _refreshRecommendationsInBackground(userId);
+    }
+  }
+
+  // ============== PUBLIC API ==============
 
   Future<Map<String, dynamic>?> getRecommendations(String userId) async {
+    // Try cache/storage first
     final cached = await _storage.getRecommendations(userId);
     if (cached != null) {
-      _refreshRecommendationsInBackground(userId);
+      // Return cached and refresh in background if online
+      if (_hasInternet) {
+        _refreshRecommendationsInBackground(userId);
+      } else {
+        // Queue for later when internet returns
+        _pendingRefreshes.add(userId);
+        debugPrint('Queued refresh for when internet returns: $userId');
+      }
       return cached;
+    }
+
+    // No cache - need to fetch
+    if (!_hasInternet) {
+      debugPrint('No cached data and no internet connection');
+      return null;
     }
 
     try {
@@ -30,27 +139,69 @@ class RecommendationsController {
   }
 
   void _refreshRecommendationsInBackground(String userId) async {
-
-    final connectivityResult = await Connectivity().checkConnectivity();
-    final hasInternet = connectivityResult != ConnectivityResult.none;
-
-    if (!hasInternet) {
-      debugPrint('Skipping background refresh — no internet connection');
+    if (!_hasInternet) {
+      _pendingRefreshes.add(userId);
+      debugPrint('No internet, queued for later: $userId');
       return;
     }
 
+    debugPrint('Starting background refresh for: $userId');
+    
+    // Use isolate for heavy computation
     compute(_backgroundFetchAndStore, userId)
         .then((freshData) async {
           if (freshData != null) {
             debugPrint('Background refresh completed');
             await _storage.storeRecommendations(userId, freshData);
-            // Optionally notify listeners or refresh UI
             _onRecommendationsUpdated?.call(freshData);
           } else {
             debugPrint('Background fetch returned null data');
           }
         })
-        .catchError((e) => debugPrint('Background refresh failed: $e'));
+        .catchError((e) {
+          debugPrint('Background refresh failed: $e');
+          // Queue for retry if it was a network error
+          if (!_hasInternet) {
+            _pendingRefreshes.add(userId);
+          }
+        });
+  }
+
+  /// Set callback
+  void setOnRecommendationsUpdated(void Function(Map<String, dynamic>) callback) {
+    _onRecommendationsUpdated = callback;
+  }
+  void setOnConnectivityChanged(void Function(bool hasConnection) callback) {
+    _onConnectivityChanged = callback;
+  }
+
+  /// Getters
+  bool get hasInternet => _hasInternet;
+  int get pendingRefreshesCount => _pendingRefreshes.length;
+
+  /// Force refresh for a user (if online)
+  Future<void> forceRefresh(String userId) async {
+    if (!_hasInternet) {
+      debugPrint('Cannot force refresh - no internet');
+      _pendingRefreshes.add(userId);
+      return;
+    }
+
+    try {
+      final fresh = await _service.getRecommendations(userId);
+      await _storage.storeRecommendations(userId, fresh);
+      _onRecommendationsUpdated?.call(fresh);
+      debugPrint('Force refresh completed for: $userId');
+    } catch (e) {
+      debugPrint('Force refresh failed: $e');
+    }
+  }
+
+  /// Dispose - clean up listener
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    _pendingRefreshes.clear();
+    debugPrint('RecommendationsController disposed');
   }
 }
 
@@ -60,6 +211,7 @@ Future<Map<String, dynamic>?> _backgroundFetchAndStore(String userId) async {
 }
 
 
+//Fetch from back service
 
 class RecommendationService {
   final String baseUrl = "https://us-central1-parchandes-7e096.cloudfunctions.net";
@@ -77,7 +229,7 @@ class RecommendationService {
   }
 }
 
-//Class for Cache
+
 /// Service that handles both temporary cache (LRU) and persistent storage (JSON)
 class RecommendationsStorageService {
   static final RecommendationsStorageService _instance = RecommendationsStorageService._internal();
