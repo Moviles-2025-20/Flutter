@@ -9,6 +9,7 @@ import 'package:app_flutter/util/auth_service.dart';
 import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
 import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
+import 'package:app_flutter/util/recommendation_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +34,8 @@ void main() async {
 
   final crashTracker = CrashTracker();
   await crashTracker.initializeCrashlytics();
+
+  await RecommendationsStorageService().preloadCacheFromStorage();
 
   await RemoteConfigService().initialize();
   runApp(const MyApp());
