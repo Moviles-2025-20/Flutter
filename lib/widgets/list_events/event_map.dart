@@ -38,6 +38,15 @@ class _EventsMapViewState extends State<EventsMapView> {
     }
   }
 
+  Future<void> _retryLoadLocation() async {
+    await _viewModel.initializeLocation();
+  }
+
+  bool _isNoInternetError() {
+    final error = _viewModel.errorMessage?.toLowerCase() ?? '';
+    return error.contains('internet') || error.contains('connection');
+  }
+
   
   void _showNearbyEventsBottomSheet() {
     final nearbyEvents = _viewModel.getNearbyEvents();
@@ -45,7 +54,7 @@ class _EventsMapViewState extends State<EventsMapView> {
     if (nearbyEvents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No hay eventos cercanos disponibles'),
+          content: Text('There are no events available.'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -79,6 +88,52 @@ class _EventsMapViewState extends State<EventsMapView> {
       value: _viewModel,
       child: Consumer<EventsMapViewModel>(
         builder: (context, viewModel, child) {
+
+        if (viewModel.errorMessage != null) {
+          return Container(
+            color: Colors.transparent,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isNoInternetError() ? Icons.wifi_off : Icons.error_outline,
+                      color: Colors.red.shade700,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      viewModel.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: _retryLoadLocation,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Retry"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.red.shade400,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+
           return Scaffold(
             body: Stack(
               children: [
@@ -101,40 +156,28 @@ class _EventsMapViewState extends State<EventsMapView> {
                   Container(
                     color: Colors.black26,
                     child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                
-                // Error message
-                if (viewModel.errorMessage != null)
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    right: 16,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                viewModel.errorMessage!,
-                                style: const TextStyle(color: Colors.red),
+                      child: Card(
+                        margin: EdgeInsets.all(24),
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                'Loading location...',
+                                style: TextStyle(fontSize: 16),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
+                
+                // Error message with retry button
+               
               ],
             ),
             // Floating Action Button

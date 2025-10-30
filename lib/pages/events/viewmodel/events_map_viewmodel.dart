@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,6 +15,8 @@ class EventsMapViewModel extends ChangeNotifier {
   List<Event> _sortedEvents = [];
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasInternet = true;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   
   // Configuration
   final int _maxEventsToShow = 5;
@@ -22,6 +28,7 @@ class EventsMapViewModel extends ChangeNotifier {
   List<Event> get sortedEvents => _sortedEvents;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get hasInternet => _hasInternet;
   
   LatLng get mapCenter {
     if (_userPosition != null) return _userPosition!;
@@ -34,6 +41,66 @@ class EventsMapViewModel extends ChangeNotifier {
     return _defaultCenter;
   }
 
+  EventsMapViewModel() {
+    _startConnectivityListener();
+  }
+
+   void _startConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
+      print("Connectivity changed: $result");
+      
+      if (result == ConnectivityResult.none) {
+
+        print("No internet detected");
+        _hasInternet = false;
+        _errorMessage = 'No internet connection. Map is unavailable.';
+        notifyListeners();
+      } else {
+
+        print("Connection detected, verifying...");
+        final realConnection = await hasInternetConnection();
+        
+        if (realConnection && !_hasInternet) {
+
+          print("Internet recovered!");
+          _hasInternet = true;
+          _errorMessage = null;
+          _determinePosition();
+          notifyListeners();
+        } else if (!realConnection) {
+          print("Connected but no real internet");
+          _hasInternet = false;
+          _errorMessage = 'No internet connection. Map is unavailable.';
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  // Check internet connection
+    Future<bool> hasInternetConnection() async {
+      try {
+        
+        // Check basic connectivity
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult == ConnectivityResult.none) {
+          return false;
+        }
+
+        // Verify real connection with timeout
+        final result = await InternetAddress.lookup('google.com').timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => [],
+        );
+        
+        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } catch (e) {
+        print('Error checking internet: $e');
+        return false;
+      }
+    }
+
+  
   // Initialize with events
   void setEvents(List<Event> events) {
     _events = events;
@@ -47,6 +114,19 @@ class EventsMapViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+
+      // Check internet first
+      final internetAvailable = await hasInternetConnection();
+      
+      _hasInternet = internetAvailable;
+      
+      if (!internetAvailable) {
+        _errorMessage = 'No internet connection. Map is unavailable.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       final position = await _determinePosition();
       if (position != null) {
         _userPosition = LatLng(position.latitude, position.longitude);
@@ -54,7 +134,12 @@ class EventsMapViewModel extends ChangeNotifier {
         _createMarkers();
       }
     } catch (e) {
-      _errorMessage = 'Error al obtener ubicación: $e';
+      final hasInternet = await hasInternetConnection();
+      if (!hasInternet) {
+        _errorMessage = 'No internet connection. Unable to get location.';
+      } else {
+        _errorMessage = 'Problem when getting location.';
+      }
       print(_errorMessage);
     } finally {
       _isLoading = false;
@@ -70,7 +155,7 @@ class EventsMapViewModel extends ChangeNotifier {
     // Check if location services are enabled
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      _errorMessage = 'Los servicios de ubicación están desactivados';
+      _errorMessage = 'Location services not enabled.';
       return null;
     }
 
@@ -79,13 +164,13 @@ class EventsMapViewModel extends ChangeNotifier {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        _errorMessage = 'Permiso de ubicación denegado';
+        _errorMessage = 'User location denied';
         return null;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      _errorMessage = 'Permiso de ubicación denegado permanentemente';
+      _errorMessage = 'User location denied permanently.';
       return null;
     }
 
