@@ -1,14 +1,18 @@
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/event_filter.dart';
+import 'package:app_flutter/util/event_cache_service.dart';
 import 'package:app_flutter/util/event_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
 class EventsViewModel extends ChangeNotifier {
   bool _isMapView;
   final EventsService _service = EventsService();
+  final EventsCacheService _cacheService = EventsCacheService();
 
   List<Event> _events = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false; // Loading more in background
   String? _error;
   EventFilters _filters = EventFilters();
   List<String> _availableCities = [];
@@ -16,6 +20,7 @@ class EventsViewModel extends ChangeNotifier {
 
   List<Event> get events => _events;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
   bool get isMapView => _isMapView;
   EventFilters get filters => _filters;
@@ -28,11 +33,16 @@ class EventsViewModel extends ChangeNotifier {
     loadFilterOptions();
   }
 
-
   void toggleView() {
     _isMapView = !_isMapView;
     notifyListeners();
   }
+
+  Future<bool> _hasInternet() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+
 
   Future<void> loadEvents() async {
     _isLoading = true;
@@ -40,16 +50,86 @@ class EventsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _events = await _service.getEvents(filters: _filters);
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-      _events = [];
-    } finally {
+      final cachedEvents = await _cacheService.getEvents(_filters);
+
+      if (cachedEvents.isNotEmpty) {
+        // Show cached immediately
+        const int immediateCount = 5;
+        _events = cachedEvents.take(immediateCount).toList();
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('Showing ${_events.length} of ${cachedEvents.length} cached events');
+
+        // Refresh in background if online
+        if (await _hasInternet()) {
+          _refreshEventsInBackground();
+        } else {
+          _queueRefreshForLater();
+        }
+
+        return;
+      }
+
+      // No cache and offline
+      if (!await _hasInternet()) {
+        _error = 'No events, check yor internet connection';
+        _events = [];
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('No cache and offline');
+        return;
+      }
+
+      // No cache but online → fetch fresh
+      final fresh = await _service.getEvents(filters: _filters);
+      _events = fresh;
+      await _cacheService.saveEvents(fresh, _filters);
       _isLoading = false;
       notifyListeners();
+      debugPrint('Loaded ${_events.length} events from network (cache miss)');
+    } catch (e) {
+      _error = 'Error loading events: $e';
+      _events = [];
+      _isLoading = false;
+      notifyListeners();
+      debugPrint('Exception: $e');
     }
   }
+
+  final List<EventFilters> _pendingRefreshes = [];
+
+  void _queueRefreshForLater() {
+    _pendingRefreshes.add(_filters);
+    debugPrint('Queued refresh for later: ${_filters.toString()}');
+  }
+
+
+
+  void _refreshEventsInBackground() {
+  () async {
+    if (_isDisposed) return;
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final fresh = await _service.getEvents(filters: _filters);
+      if (fresh.isNotEmpty) {
+        _events = fresh;
+        await _cacheService.saveEvents(fresh, _filters);
+        debugPrint('Refreshed ${fresh.length} events in background');
+      }
+    } catch (e) {
+      debugPrint('Background refresh failed: $e');
+    } finally {
+      if (!_isDisposed) {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
+    }
+  }();
+}
+
 
   Future<void> loadFilterOptions() async {
     try {
@@ -57,7 +137,7 @@ class EventsViewModel extends ChangeNotifier {
       _availableCategories = await _service.getAvailableCategories();
       notifyListeners();
     } catch (e) {
-      print('Error loading filter options: $e');
+      debugPrint('Error loading filter options: $e');
     }
   }
 
@@ -89,5 +169,19 @@ class EventsViewModel extends ChangeNotifier {
   void clearFilters() {
     _filters = EventFilters();
     loadEvents();
+  }
+
+  /// Force refresh - clear cache and reload
+  Future<void> forceRefresh() async {
+    await _cacheService.clearAllCache();
+    await loadEvents();
+  }
+
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }
