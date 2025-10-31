@@ -150,7 +150,7 @@ class RegisterViewModel extends ChangeNotifier {
     if (connectivityResult == ConnectivityResult.none) return;
 
     final pendingUsers = await _localUserService.getUnsyncedUsers();
-
+    if(pendingUsers.isEmpty){debugPrint('NO USE For SYNC ');}
     for (final user in pendingUsers) {
       try {
         await _db.collection("users").doc(user['id']).set({

@@ -86,6 +86,9 @@ class LocalUserService {
 
   Future<void> debugPrintUsers() async {
     final users = await getUsers();
+    if(users.isEmpty){
+      print("No hay usuarios");
+    }
     for (final user in users) {
       print("Usuario local: ${user['id']} - Synced: ${user['synced']}");
     }
@@ -110,5 +113,28 @@ class LocalUserService {
     );
   }
 
+  Future<bool> userExists(String uid) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) FROM users WHERE id = ?', [uid],
+    );
+    final count = Sqflite.firstIntValue(result);
+    return count == 1;
+  }
+
+  Future<Map<String, dynamic>?> getUser(String uid) async {
+    final db = await database;
+    final result = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [uid],
+    );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      return null;
+    }
+  }
 
 }
