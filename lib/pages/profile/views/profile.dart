@@ -38,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text("Select from gallery"),
               onTap: () async {
                 final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                if (image != null) await viewModel.updatePhoto(image.path);
+                if (image != null) await viewModel.updatePhotoInstantly(image.path);
                 Navigator.of(context).pop();
               },
             ),
@@ -47,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text("Take a photo"),
               onTap: () async {
                 final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-                if (image != null) await viewModel.updatePhoto(image.path);
+                if (image != null) await viewModel.updatePhotoInstantly(image.path);
                 Navigator.of(context).pop();
               },
             ),
@@ -516,6 +516,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       }
                       return;
                     }
+
                     await authViewModel.logout(context);
 
                     if (!mounted) return;
@@ -523,6 +524,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       '/start/login',
                           (route) => false,
                     );
+
+
                   },
 
                   child: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),

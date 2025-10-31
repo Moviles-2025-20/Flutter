@@ -148,9 +148,12 @@ class AuthViewModel extends ChangeNotifier {
         _user = UserModel.fromFirebase(firebaseUser, providerId);
         final registerVM = RegisterViewModel(authViewModel: this);
         final localUserService = LocalUserService();
+        final profileVM = ProfileViewModel();
         await localUserService.debugPrintUsers();
+        await profileVM.syncUserPhotoIfNeeded(_user!.uid);
         await registerVM.syncPendingUsers();
-        await _checkFirstTimeUser();
+        await isFirstTimeUser;
+
         _startConnectivityListener();
         await Future.delayed(const Duration(milliseconds: 500));
       } else {
@@ -172,8 +175,11 @@ class AuthViewModel extends ChangeNotifier {
           print(" Intentando sincronizar datos del usuario: ${_user!.uid}");
           final registerVM = RegisterViewModel(authViewModel: this);
           final localUserService = LocalUserService();
+          final profileVM = ProfileViewModel();
           await localUserService.debugPrintUsers();
+          await profileVM.syncUserPhotoIfNeeded(_user!.uid);
           await registerVM.syncPendingUsers();
+
         }
       }
     });
@@ -317,6 +323,7 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       await _checkFirstTimeUser();
+
       _error = null;
     } on TimeoutException catch (e) {
       print("❌ Timeout en autenticación: $e");
@@ -369,6 +376,9 @@ class AuthViewModel extends ChangeNotifier {
     _isFirstTimeUser = false;
     notifyListeners();
   }
+
+
+
 
   @override
   void dispose() {

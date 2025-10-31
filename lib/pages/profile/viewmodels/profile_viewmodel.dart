@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'package:crypto/crypto.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/local_DB_service.dart';
 import '../models/user_model.dart';
@@ -246,41 +249,209 @@ class ProfileViewModel extends ChangeNotifier {
     });
   }
 
-
-  /// Actualizar foto de perfil
-  Future<void> updatePhoto(String localPath) async {
+  Future<void> updatePhotoInstantly(String localPath) async {
     if (_currentUser == null) return;
 
-    _isLoading = true;
+    final uid = _currentUser!.uid;
+
+    // 1. Guardar en SharedPreferences localmente
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_photo_$uid', localPath);
+    debugPrint("!!!!!!! SharedPreferences: guardado localPath = $localPath para uid = $uid");
+
+    // 2. Mostrar la foto inmediatamente en la UI
+    _currentUser = _currentUser!.copyWith(
+      profile: _currentUser!.profile.copyWith(photo: localPath),
+    );
     notifyListeners();
 
-    try {
-      // Subir archivo a Firebase Storage
-      File file = File(localPath);
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('users/${_currentUser!.uid}/profile.jpg');
-      await ref.putFile(file);
+    // Lanzar sincronización en segundo plano (Future con handler)
+    syncPhotoInBackground(uid, localPath)
+        .then((downloadUrl) async {
 
-      // Obtener URL de descarga
-      String downloadUrl = await ref.getDownloadURL();
 
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update({
-        'profile.photo': downloadUrl,
+      if (downloadUrl != null) {
+        await prefs.setString('profile_photo_$uid', downloadUrl);
+        debugPrint("SharedPreferences: guardado downloadUrl = $downloadUrl para uid = $uid");
+        final savedPhoto = prefs.getString('profile_photo_$uid');
+        if (savedPhoto == downloadUrl) {
+          debugPrint("✅ SharedPreferences verificada: la URL se guardó correctamente.");
+        } else {
+          debugPrint("⚠️ SharedPreferences no coincide. Guardado: $savedPhoto, esperado: $downloadUrl");
+        }
+      }
+    }).catchError((e) {
+      debugPrint("Error en la sincronización de foto: $e");
+    });
+  }
+
+
+  Future<String?> syncPhotoInBackground(String uid, String localPath) async {
+    String? downloadUrl;
+
+
+    // Verificar si el usuario existe en SQLite
+    final userExists = await localUserService.userExists(uid);
+    debugPrint(" SQLite: ¿usuario existe localmente? $userExists");
+
+    if (userExists) {
+      await localUserService.updateUser(uid, {
+        "photo": localPath,
+        "synced": 0,
       });
+      debugPrint(" SQLite: guardado localPath = $localPath con synced = 0 para uid = $uid");
 
-      await loadUserData(); // Recargar datos
+    }
+
+    final connectivity = await Connectivity().checkConnectivity();
+    debugPrint(" Conectividad: ${connectivity.toString()}");
+    if (connectivity != ConnectivityResult.none) {
+      try {
+        File file = File(localPath);
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('users/${_currentUser!.uid}/profile.jpg');
+        await ref.putFile(file);
+
+        // Obtener URL de descarga
+        downloadUrl = await ref.getDownloadURL();
+        debugPrint(" Firebase Storage: URL pública obtenida = $downloadUrl");
+
+        await _firestore.collection('users').doc(uid).update({
+          'profile.photo': downloadUrl,
+        });
+        debugPrint(" Firestore: actualizado profile.photo con URL = $downloadUrl para uid = $uid");
+
+        if (userExists) {
+          await localUserService.updateUser(uid, {
+            "photo": downloadUrl,
+            "synced": 1,
+          });
+        }
+      } catch (e) {
+        debugPrint("Error al sincronizar con Firebase: $e");
+      }
+    }return downloadUrl;
+  }
+
+  Future<void> syncUserPhotoIfNeeded(String uid) async {
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity == ConnectivityResult.none) {
+        debugPrint("Sin conexión. No se puede sincronizar fotos.");
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // 1 Intentar obtener el usuario de la base de datos local
+      final user = await localUserService.getUser(uid);
+      final userExists = await localUserService.userExists(uid);
+      bool needsSync = true;
+      String? localPath;
+
+      if (userExists) {
+        // Usuario existe en la base local
+        final syncedFlag = user?['synced'] ?? 1;
+        localPath = user?['photo'];
+        if (syncedFlag ==0 ){needsSync = true;}
+        if(syncedFlag == 1){needsSync = false;}
+      }
+      else {
+        // No está en base local → usar SharedPreferences
+        localPath = prefs.getString('profile_photo_$uid');
+        debugPrint(" Usuario $uid sin base local, se usa SharedPreference.");
+      }
+
+      // Si no hay foto local, no se puede sincronizar
+      if (localPath == null || localPath.isEmpty) {
+        debugPrint("No hay foto local para $uid.");
+        return;
+      }
+
+      // Verificar que el archivo exista localmente
+      if (!File(localPath).existsSync()) {
+        debugPrint("⚠️ Archivo local no existe: $localPath");
+        return;
+      }
+
+      // 2 Obtener la foto actual desde Firebase
+      final firebaseDoc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      final firebasePhotoUrl = firebaseDoc.data()?['profile']?['photo'];
+
+      // 3 Comparar las imágenes
+      bool shouldUpload = false;
+
+        final isSame = await _arePhotosSame(firebasePhotoUrl, localPath);
+        if (!isSame) {
+          debugPrint("Foto diferente detectada. Se subirá la local.");
+          shouldUpload = true;
+        } else {
+          return;
+        }
+
+
+      // Subir y actualizar si hace falta
+      if (shouldUpload || needsSync) {
+        debugPrint("Subiendo foto de $uid a Firebase...");
+
+        final file = File(localPath);
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('users/$uid/profile.jpg');
+
+        await ref.putFile(file);
+        final downloadUrl = await ref.getDownloadURL();
+
+        // Actualizar Firebase
+        await _firestore.collection('users').doc(uid).update({
+          'profile.photo': downloadUrl,
+        });
+
+        // Actualizar base de datos local (si existe)
+
+        if (userExists) {
+          await localUserService.updateUser(uid, {
+            "photo": downloadUrl,
+            "synced": 1,
+          });
+        }
+
+        // Actualizar SharedPreferences
+        await prefs.setString('profile_photo_$uid', downloadUrl);
+
+        debugPrint("✅ Foto sincronizada correctamente para $uid.");
+      }
     } catch (e) {
-      _error = "Error al actualizar foto: $e";
-      debugPrint("Error updating photo: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      debugPrint("❌ Error en sincronización de foto ($uid): $e");
     }
   }
+
+
+  Future<bool> _arePhotosSame(String firebasePhotoUrl, String localPath) async {
+    try {
+      final fileBytes = await File(localPath).readAsBytes();
+      final localHash = md5.convert(fileBytes).toString();
+
+      final request = await HttpClient().getUrl(Uri.parse(firebasePhotoUrl));
+      final response = await request.close();
+      final remoteBytes = await response.fold<List<int>>([], (prev, element) => prev..addAll(element));
+      final remoteHash = md5.convert(remoteBytes).toString();
+
+      return localHash == remoteHash;
+    } catch (e) {
+      debugPrint("⚠️ Error comparando imágenes: $e");
+      return false;
+    }
+  }
+
+
+
+
 
   /// Agregar categoría favorita
   Future<void> addFavoriteCategory(String category) async {
