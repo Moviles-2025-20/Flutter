@@ -74,13 +74,13 @@ class AuthViewModel extends ChangeNotifier {
     
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
       if (_isWaitingForAuth && result == ConnectivityResult.none) {
-        print("⚠️ Conexión perdida durante autenticación en navegador");
+        print("Conexión perdida durante autenticación en navegador");
         
         // Esperar 1 minuto para ver si recupera
         await Future.delayed(const Duration(seconds: 5));
         
         if (!await hasInternetConnection()) {
-          print("❌ Sin internet después de espera inicial, iniciando espera de 1 minuto...");
+          print("Sin internet después de espera inicial, iniciando espera de 1 minuto...");
           _isCheckingInternet = true;
           notifyListeners();
           
@@ -88,10 +88,10 @@ class AuthViewModel extends ChangeNotifier {
           print("Tiempo esperado");
           
           if (!recovered) {
-            print("❌ No se recuperó internet en 1 minuto, cancelando autenticación");
+            print("No se recuperó internet en 1 minuto, cancelando autenticación");
             _cancelAuthProcess();
           } else {
-            print("✅ Internet recuperado, continuando...");
+            print("Internet recuperado, continuando...");
             _isCheckingInternet = false;
             notifyListeners();
           }
@@ -110,7 +110,7 @@ class AuthViewModel extends ChangeNotifier {
       print("Intento $attempts de verificar internet...");
       
       if (await hasInternetConnection()) {
-        print("✅ Internet recuperado en intento $attempts");
+        print("Internet recuperado en intento $attempts");
         return true;
       }
       
@@ -316,7 +316,7 @@ class AuthViewModel extends ChangeNotifier {
       await _checkFirstTimeUser();
       _error = null;
     } on TimeoutException catch (e) {
-      print("❌ Timeout en autenticación: $e");
+      print("Timeout en autenticación: $e");
       _error = "Login timeout. Please check your connection and try again.";
       _user = null;
     } catch (e) {
