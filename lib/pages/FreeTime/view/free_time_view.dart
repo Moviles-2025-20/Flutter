@@ -1,10 +1,10 @@
-import 'package:app_flutter/pages/FreeTime/model/event.dart';
+
 import 'package:app_flutter/pages/FreeTime/viewmodel/free_time_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/notification.dart';
 import 'package:intl/intl.dart';
-import 'package:app_flutter/pages/events/model/event.dart' hide Event;
+import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 
 
@@ -145,6 +145,7 @@ class FreeTimeEventsListContent extends StatelessWidget {
                   ),
                 )
               else
+
                 ...viewModel.availableEvents.map(
                       (event) => EventCard(event: event),
                 ),
@@ -163,6 +164,10 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final startStr = event.schedule.times.isNotEmpty ? event.schedule.times.first : "00:00";
+    final startTime = DateFormat.Hm().parse(startStr);
+    final endTime = startTime.add(Duration(minutes: event.metadata.durationMinutes));
+
     return InkWell(
       onTap: () async {
         final viewModel = context.read<FreeTimeViewModel>();
@@ -213,7 +218,7 @@ class EventCard extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
-                event.imageUrl,
+                event.metadata.imageUrl,
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -253,7 +258,7 @@ class EventCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          event.location,
+                          event.location.address,
                           style: const TextStyle(color: Colors.grey),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -266,8 +271,8 @@ class EventCard extends StatelessWidget {
                       const Icon(Icons.access_time, size: 16, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
-                        "${event.startTime.hour.toString().padLeft(2,'0')}:${event.startTime.minute.toString().padLeft(2,'0')} - "
-                            "${event.endTime.hour.toString().padLeft(2,'0')}:${event.endTime.minute.toString().padLeft(2,'0')}",
+                        "${startTime.hour.toString().padLeft(2,'0')}:${startTime.minute.toString().padLeft(2,'0')} - "
+                            "${endTime.hour.toString().padLeft(2,'0')}:${endTime.minute.toString().padLeft(2,'0')}",
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
