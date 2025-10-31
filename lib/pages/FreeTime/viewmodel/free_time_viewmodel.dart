@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/free_time_storage_service.dart';
+
+import '../../login/models/auth_models.dart';
 import '../model/event.dart';
 import '../model/free_time_slot.dart';
 import 'package:app_flutter/pages/events/model/event.dart' as EventsModel;
@@ -11,6 +15,9 @@ class FreeTimeViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final EventStorageService _eventStorageService = EventStorageService();
 
+  UserModel? _currentUser;
+  UserModel? get currentUser => _currentUser;
+
   List<EventsModel.Event> _availableEvents = [];
   List<EventsModel.Event> get availableEvents => _availableEvents;
 
@@ -18,6 +25,9 @@ class FreeTimeViewModel extends ChangeNotifier {
   List<FreeTimeSlot> _freeTimeSlots = [];
 
   List<FreeTimeSlot> get freeTimeSlots => _freeTimeSlots;
+
+  bool _hasConnection = true;
+  bool get hasConnection => _hasConnection;
 
 
 
@@ -39,17 +49,16 @@ class FreeTimeViewModel extends ChangeNotifier {
     notifyListeners();
 
     final isConnected = await hasInternetConnection();
-    final offlineEvents = await _eventStorageService.loadUserEvents(userId);
+    _hasConnection = isConnected;
+
+
+
 
     try {
 
 
       // Mostrar desde cache o disco
       final offlineEvents = await _eventStorageService.loadUserEvents(userId);
-      for (final e in offlineEvents) {
-        debugPrint('🧪 Evento desde disco: $e');
-        debugPrint('🧪 ID detectado: ${e['id']}');
-      }
       if (!isConnected) {
         if (offlineEvents.isNotEmpty) {
           _availableEvents = offlineEvents
@@ -79,10 +88,13 @@ class FreeTimeViewModel extends ChangeNotifier {
 
 
 
+
+
       // Mapear free time slots
       _freeTimeSlots = freeSlotsData.map((slot) {
         return FreeTimeSlot.fromMap(slot as Map<String, dynamic>);
       }).toList();
+
 
 
       // Cargar eventos activos
@@ -109,10 +121,10 @@ class FreeTimeViewModel extends ChangeNotifier {
         if (detailed != null) detailedEvents.add(detailed);
       }
       print("vamos a guardarlossss 3");
-      // 7️⃣ Guardar los 3 primeros en cache y disco
+      //  Guardar los 3 primeros en cache y disco
       await _eventStorageService.saveUserEvents(userId, detailedEvents.take(3).toList());
 
-      // 8️⃣ Mostrar todos los eventos detallados
+      //  Mostrar todos los eventos detallados
       _availableEvents = detailedEvents;
       notifyListeners();
 

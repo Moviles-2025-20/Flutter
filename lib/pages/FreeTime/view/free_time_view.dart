@@ -73,39 +73,42 @@ class FreeTimeEventsListContent extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               // --- FREE TIME SLOTS ---
-              const Text(
-                "Your Free Time",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              ...viewModel.freeTimeSlots.map((slot) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 18, color: Colors.orange),
-                      const SizedBox(width: 8),
-                      Text(
-                        slot.day,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.access_time, size: 16, color: Colors.blue),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${DateFormat.Hm().format(slot.startTime)
-                        } - ${DateFormat.Hm().format(slot.endTime)
-                        }",
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                    ],
+              if (viewModel.hasConnection) ...[
+                const Text(
+                  "Your Free Time",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              }).toList(),
+                ),
+                const SizedBox(height: 12),
+
+                ...viewModel.freeTimeSlots.map((slot) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 18, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Text(
+                          slot.day,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.access_time, size: 16, color: Colors.blue),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${DateFormat.Hm().format(slot.startTime)} - ${DateFormat.Hm().format(slot.endTime)}",
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+
+                const SizedBox(height: 20),
+              ],
+
 
               const SizedBox(height: 20),
 
@@ -272,11 +275,13 @@ class EventCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         "${startTime.hour.toString().padLeft(2,'0')}:${startTime.minute.toString().padLeft(2,'0')} - "
-                            "${endTime.hour.toString().padLeft(2,'0')}:${endTime.minute.toString().padLeft(2,'0')}",
+                            "${endTime.hour.toString().padLeft(2,'0')}:${endTime.minute.toString().padLeft(2,'0')} • "
+                            "${event.schedule.days.isNotEmpty ? event.schedule.days.first : "Unknown day"}",
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 4),
                   Row(
                     children: [
