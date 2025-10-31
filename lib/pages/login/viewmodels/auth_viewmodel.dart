@@ -7,13 +7,16 @@ import 'package:app_flutter/util/auth_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:app_flutter/util/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
 import '../../../util/local_DB_service.dart';
+import '../../profile/viewmodels/profile_viewmodel.dart';
 
 
 class AuthViewModel extends ChangeNotifier {
@@ -145,9 +148,12 @@ class AuthViewModel extends ChangeNotifier {
         _user = UserModel.fromFirebase(firebaseUser, providerId);
         final registerVM = RegisterViewModel(authViewModel: this);
         final localUserService = LocalUserService();
+        final profileVM = ProfileViewModel();
         await localUserService.debugPrintUsers();
+        await profileVM.syncUserPhotoIfNeeded(_user!.uid);
         await registerVM.syncPendingUsers();
-        await _checkFirstTimeUser();
+        await isFirstTimeUser;
+
         _startConnectivityListener();
         await Future.delayed(const Duration(milliseconds: 500));
       } else {
@@ -169,8 +175,11 @@ class AuthViewModel extends ChangeNotifier {
           print(" Intentando sincronizar datos del usuario: ${_user!.uid}");
           final registerVM = RegisterViewModel(authViewModel: this);
           final localUserService = LocalUserService();
+          final profileVM = ProfileViewModel();
           await localUserService.debugPrintUsers();
+          await profileVM.syncUserPhotoIfNeeded(_user!.uid);
           await registerVM.syncPendingUsers();
+
         }
       }
     });
@@ -314,6 +323,7 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       await _checkFirstTimeUser();
+
       _error = null;
     } on TimeoutException catch (e) {
       print("Timeout en autenticación: $e");
@@ -342,7 +352,7 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   // Logout
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -350,6 +360,9 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _authService.logout();
       _user = null;
+      // Limpiar estado del perfil
+      final profileVM = Provider.of<ProfileViewModel>(context, listen: false);
+      profileVM.clearUserData();
     } catch (e) {
       print("Error in the logout: $e");
       _error = "There was a problem during the logout.";
@@ -363,6 +376,9 @@ class AuthViewModel extends ChangeNotifier {
     _isFirstTimeUser = false;
     notifyListeners();
   }
+
+
+
 
   @override
   void dispose() {
