@@ -67,7 +67,7 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
       _weeklyEvent = weeklyEvents[random.nextInt(weeklyEvents.length)];
 
       // Traer comentarios del evento
-      _comments = await _commentService.getCommentsForEvent(_weeklyEvent!.id);
+      _comments = await _commentService.loadComments(_weeklyEvent!.id);
 
     } catch (e) {
       _errorMessage = "Error loading weekly challenge: $e";

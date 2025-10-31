@@ -30,7 +30,7 @@ class _DetailEventState extends State<DetailEvent> {
   @override
   void initState() {
     super.initState();
-    _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+    _commentsFuture = _commentService.loadComments(widget.event.id);
     print(_commentsFuture);
     _loadCheckIn();
   }
@@ -53,7 +53,7 @@ class _DetailEventState extends State<DetailEvent> {
 
   void _refreshComments() {
     setState(() {
-      _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+      _commentsFuture = _commentService.loadComments(widget.event.id);
     });
   }
 
@@ -101,6 +101,7 @@ class _DetailEventState extends State<DetailEvent> {
                           
                         ),
                       );
+                      _refreshComments();
                     },
                     child: const Text("Make a Comment"),
                   ),
@@ -134,7 +135,7 @@ class _DetailEventState extends State<DetailEvent> {
             ),
             const SizedBox(height: 12),
 
-            // 🔸 FutureBuilder de comentarios
+            //  FutureBuilder de comentarios
             FutureBuilder<List<Comment>>(
               future: _commentsFuture,
               builder: (context, snapshot) {
@@ -301,7 +302,7 @@ class _DetailEventState extends State<DetailEvent> {
 
   Widget _buildCommentCard(Comment comment) {
     final formattedDate =
-        DateFormat('MMM d, yyyy • hh:mm a').format(comment.createdAt);
+        DateFormat('MMM d, yyyy • hh:mm a').format(comment.created);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),

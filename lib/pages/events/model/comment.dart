@@ -6,7 +6,7 @@ class Comment {
   final String avatar;
   final String event_id;
   final String description;
-  final DateTime createdAt;
+  final DateTime created;
   final String? imageUrl;
 
   Comment({
@@ -15,7 +15,7 @@ class Comment {
     required this.avatar,
     required this.event_id,
     required this.description,
-    required this.createdAt,
+    required this.created,
     this.imageUrl,
   });
 
@@ -26,10 +26,10 @@ class Comment {
       avatar: json['avatar'] ?? '',
       event_id: json['event_id'] ?? '',
       description: json['description'] ?? '',
-      createdAt: json['createdAt'] != null
-          ? (json['createdAt'] is String
-              ? DateTime.parse(json['createdAt'])
-              : (json['createdAt'] as Timestamp).toDate())
+      created: json['created'] != null
+          ? (json['created'] is String
+              ? DateTime.parse(json['created'])
+              : (json['created'] as Timestamp).toDate())
           : DateTime.now(),
       imageUrl: json['imageUrl'],
     );
