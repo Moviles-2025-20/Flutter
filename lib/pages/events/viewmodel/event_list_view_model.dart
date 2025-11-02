@@ -1,14 +1,18 @@
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/event_filter.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/event_cache_service.dart';
 import 'package:app_flutter/util/event_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class EventsViewModel extends ChangeNotifier {
   bool _isMapView;
   final EventsService _service = EventsService();
   final EventsCacheService _cacheService = EventsCacheService();
+  final AnalyticsService _analytics = AnalyticsService();
+  final user = FirebaseAuth.instance.currentUser;
 
   List<Event> _events = [];
   bool _isLoading = false;
@@ -35,6 +39,9 @@ class EventsViewModel extends ChangeNotifier {
 
   void toggleView() {
     _isMapView = !_isMapView;
+    if (_isMapView){
+      _analytics.logMapUsed(user!.uid);
+    }
     notifyListeners();
   }
 
