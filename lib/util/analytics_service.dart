@@ -54,6 +54,19 @@ class AnalyticsService {
       },
     );
   }
+
+  //Enter the map feature
+  Future<void> logMapUsed(String userId) async {
+    print("Generando evento de mapa=============================================================================================================");
+    await _analytics.logEvent(
+      name: 'map_used',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
+
   // Weekly Challenge specific
   Future<void> logWeeklyChallengeCompleted(String userId, String challengeId) async {
     final now = DateTime.now();
