@@ -31,7 +31,17 @@ class HeaderSectionWML extends StatelessWidget {
           children: [
             const SizedBox(height: 8),
 
-            if (lastWished != 0) ...[
+            if(lastWished == null)...[
+              Text(
+                "Not available to find previous wish.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ]
+
+            else if (lastWished != 0) ...[
               Text(
                 "Last time you wished luck for:",
                 style: TextStyle(
