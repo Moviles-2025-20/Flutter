@@ -177,7 +177,7 @@ class _DetailEventState extends State<DetailEvent> {
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
-                  Image.asset("assets/images/event.jpg", height: 180),
+                  Image.asset("assets/images/events/event.jpg", height: 180),
             ),
           ),
           Padding(

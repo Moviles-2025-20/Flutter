@@ -88,7 +88,7 @@ class RecommendationCard extends StatelessWidget {
                         height: double.infinity,
                         errorBuilder: (context, error, stackTrace) {
                           return Image.asset(
-                            'assets/images/event.jpg',
+                            'assets/images/events/event.jpg',
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,

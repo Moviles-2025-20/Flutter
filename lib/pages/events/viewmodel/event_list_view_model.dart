@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/event_filter.dart';
 import 'package:app_flutter/util/analytics_service.dart';
@@ -16,11 +18,16 @@ class EventsViewModel extends ChangeNotifier {
 
   List<Event> _events = [];
   bool _isLoading = false;
-  bool _isLoadingMore = false; // Loading more in background
+  bool _isLoadingMore = false;
   String? _error;
   EventFilters _filters = EventFilters();
   List<String> _availableCities = [];
   List<String> _availableCategories = [];
+  
+  // Connectivity
+  bool _hasInternet = true;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  final List<EventFilters> _pendingRefreshes = [];
 
   List<Event> get events => _events;
   bool get isLoading => _isLoading;
@@ -30,12 +37,120 @@ class EventsViewModel extends ChangeNotifier {
   EventFilters get filters => _filters;
   List<String> get availableCities => _availableCities;
   List<String> get availableCategories => _availableCategories;
+  bool get hasInternet => _hasInternet;
 
   EventsViewModel({bool initialIsMapView = false}) 
       : _isMapView = initialIsMapView {
+    _startConnectivityListener();
     loadEvents();
     loadFilterOptions();
   }
+
+  // ============== CONNECTIVITY LISTENER ==============
+
+  void _startConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+      (ConnectivityResult result) async {
+        await _onConnectivityChanged(result);
+      },
+    );
+    
+    // Check initial connectivity
+    _checkInitialConnectivity();
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    try {
+      final result = await Connectivity().checkConnectivity();
+      if (result == ConnectivityResult.none) {
+        _hasInternet = false;
+      } else {
+        _hasInternet = await _verifyInternetConnection();
+      }
+      debugPrint('Estado inicial de internet (Events): $_hasInternet');
+    } catch (e) {
+      debugPrint('Error al verificar conectividad inicial: $e');
+      _hasInternet = false;
+    }
+  }
+
+  Future<void> _onConnectivityChanged(ConnectivityResult result) async {
+    try {
+      debugPrint('Connectivity changed (Events): $result');
+      
+      final wasOffline = !_hasInternet;
+      
+      if (result == ConnectivityResult.none) {
+        // Lost connection
+        debugPrint('Internet connection lost (Events)');
+        _hasInternet = false;
+        notifyListeners();
+      } else {
+        // Potentially gained connection - verify real connectivity
+        debugPrint('Connection detected (Events), verifying...');
+        final realConnection = await _verifyInternetConnection();
+        
+        if (realConnection && !_hasInternet) {
+          // Internet recovered
+          debugPrint('Internet connection recovered (Events)!');
+          _hasInternet = true;
+          notifyListeners();
+          
+          // If was offline, process pending refreshes
+          if (wasOffline) {
+            debugPrint('Processing pending refreshes (Events)...');
+            await _processPendingRefreshes();
+          }
+        } else if (!realConnection) {
+          // False positive - still no real internet
+          debugPrint('Connected but no real internet (Events)');
+          _hasInternet = false;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error en _onConnectivityChanged: $e');
+    }
+  }
+
+  Future<bool> _verifyInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => [],
+      );
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error verifying internet: $e');
+      return false;
+    }
+  }
+
+  Future<void> _processPendingRefreshes() async {
+    if (_pendingRefreshes.isEmpty) {
+      debugPrint('No pending refreshes to process');
+      return;
+    }
+    
+    debugPrint('Processing ${_pendingRefreshes.length} pending refresh(es)');
+    
+    // Process the most recent filter (usually the current one)
+    final filtersToRefresh = _pendingRefreshes.last;
+    _pendingRefreshes.clear();
+    
+    // Refresh with the pending filters
+    final previousFilters = _filters;
+    _filters = filtersToRefresh;
+    
+    await _refreshEventsInBackground();
+    
+    // Restore original filters if they changed
+    if (previousFilters != filtersToRefresh) {
+      _filters = previousFilters;
+    }
+  }
+
+  // ============== EVENTS LOADING ==============
 
   void toggleView() {
     _isMapView = !_isMapView;
@@ -44,12 +159,6 @@ class EventsViewModel extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  Future<bool> _hasInternet() async {
-    final result = await Connectivity().checkConnectivity();
-    return result != ConnectivityResult.none;
-  }
-
 
   Future<void> loadEvents() async {
     _isLoading = true;
@@ -68,7 +177,7 @@ class EventsViewModel extends ChangeNotifier {
         debugPrint('Showing ${_events.length} of ${cachedEvents.length} cached events');
 
         // Refresh in background if online
-        if (await _hasInternet()) {
+        if (_hasInternet) {
           _refreshEventsInBackground();
         } else {
           _queueRefreshForLater();
@@ -78,8 +187,8 @@ class EventsViewModel extends ChangeNotifier {
       }
 
       // No cache and offline
-      if (!await _hasInternet()) {
-        _error = 'No events, check yor internet connection';
+      if (!_hasInternet) {
+        _error = 'No events, check your internet connection';
         _events = [];
         _isLoading = false;
         notifyListeners();
@@ -103,40 +212,41 @@ class EventsViewModel extends ChangeNotifier {
     }
   }
 
-  final List<EventFilters> _pendingRefreshes = [];
-
   void _queueRefreshForLater() {
     _pendingRefreshes.add(_filters);
     debugPrint('Queued refresh for later: ${_filters.toString()}');
   }
 
-
-
-  void _refreshEventsInBackground() {
-  () async {
+  Future<void> _refreshEventsInBackground() async {
     if (_isDisposed) return;
 
     _isLoadingMore = true;
     notifyListeners();
 
     try {
-      final fresh = await _service.getEvents(filters: _filters);
-      if (fresh.isNotEmpty) {
+      final fresh = await _service.getEvents(filters: _filters).timeout(
+        const Duration(seconds: 10),
+      );
+      
+      if (fresh.isNotEmpty && !_isDisposed) {
         _events = fresh;
         await _cacheService.saveEvents(fresh, _filters);
-        debugPrint('Refreshed ${fresh.length} events in background');
+        debugPrint('✅ Refreshed ${fresh.length} events in background');
       }
     } catch (e) {
-      debugPrint('Background refresh failed: $e');
+      debugPrint('❌ Background refresh failed: $e');
+      // Update internet status if it was a network error
+      if (e is SocketException || e is TimeoutException) {
+        _hasInternet = false;
+        _queueRefreshForLater();
+      }
     } finally {
       if (!_isDisposed) {
         _isLoadingMore = false;
         notifyListeners();
       }
     }
-  }();
-}
-
+  }
 
   Future<void> loadFilterOptions() async {
     try {
@@ -189,6 +299,7 @@ class EventsViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 }

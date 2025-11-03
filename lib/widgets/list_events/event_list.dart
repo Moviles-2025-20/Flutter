@@ -3,6 +3,7 @@ import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
 import 'package:app_flutter/util/analytics_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class EventsListView extends StatelessWidget {
   final List<Event> events;
@@ -102,26 +103,11 @@ class EventCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-                child: SizedBox(
-                  width: 120,
-                  child: Image.network(
-                    event.metadata.imageUrl, // tu campo con la URL
-                    fit: BoxFit.cover,       // llena el contenedor sin dejar bordes
-                    errorBuilder: (context, error, stackTrace) {
-                      // Si hay error en la carga, muestra una imagen de respaldo
-                      return Image.asset(
-                        "assets/images/event.jpg",
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                ),
-              ),
+              EventImage(
+              imageUrl: event.metadata.imageUrl,
+              category: event.category,
+              width: 120,
+            ),
 
               // Contenido
               Expanded(
@@ -232,4 +218,67 @@ class EventCard extends StatelessWidget {
     );
   }
 
+}
+
+
+class EventImage extends StatelessWidget {
+  final String imageUrl;
+  final String category;
+  final double width;
+
+  const EventImage({
+    Key? key,
+    required this.imageUrl,
+    required this.category,
+    this.width = 120,
+  }) : super(key: key);
+
+  Future<bool> _assetExists(String path) async {
+    try {
+      await rootBundle.load(path);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+      ),
+      child: SizedBox(
+        width: width,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Intenta cargar imagen de categoría
+            final categoryImagePath = "assets/images/events/$category.jpg";
+            
+            return FutureBuilder<bool>(
+              future: _assetExists(categoryImagePath),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  // Existe la imagen de categoría
+                  return Image.asset(
+                    categoryImagePath,
+                    fit: BoxFit.cover,
+                  );
+                } else {
+                  // No existe, usar imagen por defecto
+                  return Image.asset(
+                    "assets/images/events/event.jpg",
+                    fit: BoxFit.cover,
+                  );
+                }
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
