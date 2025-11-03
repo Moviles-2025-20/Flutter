@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'dart:async';
 import 'dart:io';
 
@@ -103,8 +105,16 @@ class EventsMapViewModel extends ChangeNotifier {
   
   // Initialize with events
   void setEvents(List<Event> events) {
+    debugPrint('EventsMapViewModel: Setting ${events.length} events');
     _events = events;
+    
+    // If we have user position, resort events by distance
+    if (_userPosition != null) {
+      _sortEventsByDistance();
+    }
+
     _createMarkers();
+    notifyListeners();
   }
 
   // Get user location and sort events
@@ -242,6 +252,8 @@ class EventsMapViewModel extends ChangeNotifier {
   void _createMarkers() {
     final eventsToShow = _sortedEvents.isNotEmpty ? _sortedEvents : _events;
     
+    debugPrint('Creating markers for ${eventsToShow.length} events');
+    
     _markers = eventsToShow.map((event) {
       if (event.location.coordinates.length < 2) return null;
 
@@ -277,6 +289,8 @@ class EventsMapViewModel extends ChangeNotifier {
     if (_userPosition != null) {
       _markers.add(_createUserMarker());
     }
+    
+    debugPrint('Created ${_markers.length} markers');
   }
 
   // Build marker snippet (subtitle)

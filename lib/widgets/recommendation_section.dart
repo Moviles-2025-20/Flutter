@@ -402,7 +402,7 @@ class _RecommendationsSectionState extends State<RecommendationsSection> {
                 description: event.description,
                 imagePath: event.metadata.imageUrl.isNotEmpty
                     ? event.metadata.imageUrl
-                    : 'assets/images/event.jpg',
+                    : 'assets/images/events/event.jpg',
                 day: event.schedule.days.isNotEmpty
                     ? event.schedule.days.join(", ")
                     : null,

@@ -227,7 +227,7 @@ class EventCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Image.asset(
-                    "assets/images/event.jpg",
+                    "assets/images/events/event.jpg",
                     height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
