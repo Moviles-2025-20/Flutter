@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../util/analytics_service.dart';
 
 class EventsMapViewModel extends ChangeNotifier {
   // State
@@ -19,7 +21,20 @@ class EventsMapViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _hasInternet = true;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  
+  Event? _selectedEvent;
+  Event? get selectedEvent => _selectedEvent;
+
+  void selectEvent(Event event) {
+    _selectedEvent = event;
+    notifyListeners();
+  }
+
+  void clearSelectedEvent() {
+    _selectedEvent = null;
+    notifyListeners();
+  }
+
+
   // Configuration
   final int _maxEventsToShow = 5;
   final LatLng _defaultCenter = const LatLng(4.7110, -74.0721); // Bogotá
@@ -282,6 +297,9 @@ class EventsMapViewModel extends ChangeNotifier {
           snippet: _buildMarkerSnippet(event, distanceKm, isNearby),
         ),
         icon: _getMarkerIcon(event, isNearby),
+        onTap: () {
+          selectEvent(event); // guarda el evento seleccionado
+        },
       );
     }).whereType<Marker>().toSet();
 
@@ -357,7 +375,46 @@ class EventsMapViewModel extends ChangeNotifier {
     return _sortedEvents.sublist(0, count);
   }
 
-  @override
+  Future<void> requestDirections(Event event, String userId) async {
+      // Construir la query con nombre + ciudad/dirección si está disponible
+      final parts = <String>[
+        event.name,
+        if (event.location.city?.isNotEmpty == true) event.location.city!,
+        if (event.location.address?.isNotEmpty == true) event.location.address!,
+      ];
+
+      // Filtrar nulos/vacíos y unir con coma
+      final queryText = parts
+          .map((p) => p.trim())
+          .where((p) => p.isNotEmpty)
+          .join(", ");
+
+      // Encode para URL
+      final query = Uri.encodeComponent(queryText);
+
+      // Usar Google Maps Search con texto (sin coordenadas)
+      final url = Uri.parse("https://www.google.com/maps/search/?api=1&query=$query");
+
+      // Log en Analytics (puedes renombrar si ya no son “directions”)
+      await AnalyticsService().logDirectionsRequested(event.id, userId);
+
+      // Abrir Google Maps
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        print("No se pudo abrir Google Maps: $url");
+      }
+    }
+
+
+
+
+
+
+
+
+
+    @override
   void dispose() {
     super.dispose();
   }
