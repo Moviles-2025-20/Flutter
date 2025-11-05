@@ -153,6 +153,18 @@ class AnalyticsService {
       },
     );
   }
+
+  Future<void> logDirectionsRequested(String eventId, String userId) async {
+    await _analytics.logEvent(
+      name: 'directions_requested',
+      parameters: {
+        'user_id': userId,
+        'event_id': eventId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
   void activarFirebase() async{
     await _analytics.setAnalyticsCollectionEnabled(true);
   }

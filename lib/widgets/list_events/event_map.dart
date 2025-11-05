@@ -1,10 +1,13 @@
 import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:app_flutter/widgets/list_events/events_map_list.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/events_map_viewmodel.dart';
+
+import '../../util/analytics_service.dart';
 
 class EventsMapView extends StatefulWidget {
   final List<Event> events;
@@ -29,6 +32,7 @@ class _EventsMapViewState extends State<EventsMapView> {
     _viewModel.setEvents(widget.events);
     _viewModel.initializeLocation();
   }
+
 
   @override
   void didUpdateWidget(EventsMapView oldWidget) {
@@ -75,11 +79,45 @@ class _EventsMapViewState extends State<EventsMapView> {
             MaterialPageRoute(
               builder: (context) => DetailEvent(event: event),
             ),
+
           );
         },
       ),
     );
   }
+
+  void _showDirectionsButton(Event event) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(event.name,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _viewModel.requestDirections(event, "user123"); // aquí log + abrir Google Maps
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.directions),
+                label: const Text("Cómo llegar"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink.shade400,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
 
   @override
@@ -150,6 +188,8 @@ class _EventsMapViewState extends State<EventsMapView> {
                   myLocationButtonEnabled: true,
                   myLocationEnabled: true,
                 ),
+
+
                 
                 // Loading indicator
                 if (viewModel.isLoading)
@@ -181,14 +221,30 @@ class _EventsMapViewState extends State<EventsMapView> {
               ],
             ),
             // Floating Action Button
-            floatingActionButton: viewModel.userPosition != null
+            floatingActionButton: viewModel.selectedEvent != null
                 ? FloatingActionButton.extended(
-                    onPressed: _showNearbyEventsBottomSheet,
-                    icon: const Icon(Icons.near_me, color: Colors.white),
-                    label: const Text('Eventos cercanos', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    backgroundColor: Colors.pink.shade400,
-                  )
-                : null,
+              onPressed: () {
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                if (userId != null) {
+                  _viewModel.requestDirections(viewModel.selectedEvent!, userId);
+                  _viewModel.clearSelectedEvent();
+                } else {
+                  print("No hay usuario autenticado");
+                }
+              },
+              icon: const Icon(Icons.directions, color: Colors.white),
+              label: const Text("Cómo llegar", style: TextStyle(fontSize: 16, color: Colors.white)),
+              backgroundColor: Colors.pink.shade400,
+            )
+                : (viewModel.userPosition != null
+                ? FloatingActionButton.extended(
+              onPressed: _showNearbyEventsBottomSheet,
+              icon: const Icon(Icons.near_me, color: Colors.white),
+              label: const Text('Eventos cercanos',
+                  style: TextStyle(fontSize: 16, color: Colors.white)),
+              backgroundColor: Colors.pink.shade400,
+            )
+                : null),
             floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           );
         },
