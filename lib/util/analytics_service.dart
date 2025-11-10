@@ -59,7 +59,7 @@ class AnalyticsService {
   Future<void> logMapUsed(String userId) async {
     print("Generando evento de mapa=============================================================================================================");
     await _analytics.logEvent(
-      name: 'map_used',
+      name: 'map_view_opened',
       parameters: {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
