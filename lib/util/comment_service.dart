@@ -9,69 +9,75 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:lru_cache/lru_cache.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:app_flutter/pages/events/model/comment.dart';
+import 'package:sqflite/sqflite.dart'; 
+import 'package:path/path.dart'; 
 
 class CommentService {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// LruCache<String, List<Comment>> — usamos put/get en lugar de operadores []
   final LruCache<String, List<Comment>> _memoryCache =
       LruCache<String, List<Comment>>(50);
 
   final CacheManager _imageCache = DefaultCacheManager();
 
-  /// Load comments with priority: memory -> local -> firebase
+  static const String _commentsTable = 'event_comments'; 
+  static const String _dbName = 'comments_storage.db'; 
+  /// Load comments with priority:
+  /// memory → local(JSON + SQLite) → Firebase (if online)
   Future<List<Comment>> loadComments(String eventId) async {
-    // 1) Try memory cache via get()
+    // 1️⃣ Try memory cache
     try {
       final mem = await _memoryCache.get(eventId);
       if (mem != null && mem.isNotEmpty) {
         print('⚡ Loaded comments from LRU memory cache');
         return mem;
       }
-    } catch (e) {
-      // si get no existe en la versión del paquete, podrías usar otro método del package
-      // o reemplazar LruCache por un Map/LinkedHashMap con lógica LRU propia.
-    }
+    } catch (_) {}
 
-    // 2) Try local storage
-    final localComments = await _loadCommentsFromLocal(eventId);
-    if (localComments.isNotEmpty) {
-      print('Loaded comments from local cache');
-      // Guardar en memoria LRU usando put
-      try {
-        _memoryCache.put(eventId, localComments);
-      } catch (_) {}
-      // refrescar en background desde Firebase
+    // 2️⃣ Load from local file (JSON)
+    final localJsonComments = await _loadCommentsFromLocal(eventId);
+
+    // 3️⃣ Load from SQLite
+    final localSQLiteComments = await _loadCommentsFromSQLite(eventId);
+
+    // 3333333333333333333333333333333333333333333333333 combinar ambos sin duplicar (por id)
+    final Map<String, Comment> merged = {};
+    for (final c in [...localJsonComments, ...localSQLiteComments]) {
+      merged[c.id] = c;
+    }
+    final combinedLocal = merged.values.toList();
+
+    if (combinedLocal.isNotEmpty) {
+      print('📦 Loaded ${combinedLocal.length} comments from local storage (JSON + SQLite)');
+      _memoryCache.put(eventId, combinedLocal);
       _refreshFirebaseInBackground(eventId);
-      return localComments;
+      return combinedLocal;
     }
 
-    // 3) Try Firebase if online
+    // 4️⃣ Try Firebase if online
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity != ConnectivityResult.none) {
       final firebaseComments = await _loadCommentsFromFirebase(eventId);
       if (firebaseComments.isNotEmpty) {
-        print(' Loaded comments from Firebase');
-        try {
-          _memoryCache.put(eventId, firebaseComments);
-        } catch (_) {}
+        print('☁️ Loaded comments from Firebase');
+        _memoryCache.put(eventId, firebaseComments);
         await _saveCommentsLocally(eventId, firebaseComments);
+        await _saveCommentsToSQLite(eventId, firebaseComments); // 33333333333333333333333333333333333333333
         return firebaseComments;
       }
     }
 
-    print(' No comments found locally or remotely');
+    print('🚫 No comments found locally or remotely');
     return [];
   }
 
-  /// Load from Firebase (collection 'comments' filtered by eventId)
+  /// Load from Firebase
   Future<List<Comment>> _loadCommentsFromFirebase(String eventId) async {
     try {
       final query = _firestore
           .collection("comments")
           .where("eventId", isEqualTo: eventId)
-          .orderBy("created", descending: true)
           .limit(100);
 
       final snapshot = await query.get();
@@ -81,7 +87,6 @@ class CommentService {
         return Comment.fromJson(doc.id, data);
       }).toList();
 
-      // cachear imágenes en disco (opcional)
       for (var c in comments) {
         if (c.imageUrl != null && c.imageUrl!.isNotEmpty) {
           try {
@@ -92,12 +97,12 @@ class CommentService {
 
       return comments;
     } catch (e) {
-      print(" Error loading Firebase comments: $e");
+      print("❌ Error loading Firebase comments: $e");
       return [];
     }
   }
 
-  /// Load cached comments from local file (comments_cache.json)
+  /// Load cached comments from local JSON
   Future<List<Comment>> _loadCommentsFromLocal(String eventId) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -118,12 +123,63 @@ class CommentService {
 
       return eventComments;
     } catch (e) {
-      print(" Error reading local comments: $e");
+      print("❌ Error reading local JSON comments: $e");
       return [];
     }
   }
 
-  /// Save comments to local cache file (merges by event)
+  /// 3333333333333333333333333333333333333333333333333 Load cached comments from SQLite
+  Future<List<Comment>> _loadCommentsFromSQLite(String eventId) async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, _dbName);
+
+      final db = await openDatabase(
+        path,
+        version: 1,
+        onCreate: (Database db, int version) async {
+          await db.execute('''
+            CREATE TABLE $_commentsTable (
+              id TEXT PRIMARY KEY,
+              event_id TEXT,
+              user_name TEXT,
+              avatar TEXT,
+              description TEXT,
+              created TEXT,
+              image_url TEXT
+            )
+          ''');
+        },
+      );
+
+      final rows = await db.query(
+        _commentsTable,
+        where: 'event_id = ?',
+        whereArgs: [eventId],
+      );
+
+      await db.close();
+
+      if (rows.isEmpty) return [];
+
+      return rows.map((row) {
+        return Comment(
+          id: row['id'] as String,
+          userName: row['user_name'] as String,
+          avatar: row['avatar'] as String,
+          event_id: row['event_id'] as String,
+          description: row['description'] as String,
+          created: DateTime.parse(row['created'] as String),
+          imageUrl: row['image_url'] as String?,
+        );
+      }).toList();
+    } catch (e) {
+      print('❌ Error reading comments from SQLite: $e');
+      return [];
+    }
+  }
+
+  /// Save comments to local JSON (offline created ones)
   Future<void> _saveCommentsLocally(
       String eventId, List<Comment> comments) async {
     try {
@@ -137,10 +193,8 @@ class CommentService {
         allComments = json.decode(content);
       }
 
-      // remove old comments for same event
       allComments.removeWhere((c) => c["eventId"] == eventId);
 
-      // add new ones
       allComments.addAll(comments.map((c) => {
             "id": c.id,
             "userName": c.userName,
@@ -152,13 +206,63 @@ class CommentService {
           }));
 
       await file.writeAsString(json.encode(allComments));
-      print(" Comments saved to local cache");
+      print("💾 Comments saved to local JSON cache");
     } catch (e) {
-      print(" Error saving comments locally: $e");
+      print("❌ Error saving comments locally (JSON): $e");
     }
   }
 
-  /// When we have local data, refresh silently from Firebase
+  /// 3333333333333333333333333333333333333333333333333 Save comments to SQLite
+  Future<void> _saveCommentsToSQLite(
+      String eventId, List<Comment> comments) async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, _dbName);
+
+      final db = await openDatabase(
+        path,
+        version: 1,
+        onCreate: (Database db, int version) async {
+          await db.execute('''
+            CREATE TABLE $_commentsTable (
+              id TEXT PRIMARY KEY,
+              event_id TEXT,
+              user_name TEXT,
+              avatar TEXT,
+              description TEXT,
+              created TEXT,
+              image_url TEXT
+            )
+          ''');
+        },
+      );
+
+      await db.delete(_commentsTable, where: 'event_id = ?', whereArgs: [eventId]);
+
+      for (var c in comments) {
+        await db.insert(
+          _commentsTable,
+          {
+            'id': c.id,
+            'event_id': c.event_id,
+            'user_name': c.userName ?? '',
+            'avatar': c.avatar ?? '',
+            'description': c.description ?? '',
+            'created': c.created.toIso8601String(),
+            'image_url': c.imageUrl ?? '',
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      await db.close();
+      print('💾 Comments saved to SQLite for event $eventId');
+    } catch (e) {
+      print('❌ Error saving comments to SQLite: $e');
+    }
+  }
+
+  /// Refresh from Firebase in background
   void _refreshFirebaseInBackground(String eventId) async {
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity == ConnectivityResult.none) return;
@@ -166,11 +270,10 @@ class CommentService {
     try {
       final firebaseComments = await _loadCommentsFromFirebase(eventId);
       if (firebaseComments.isNotEmpty) {
-        try {
-          _memoryCache.put(eventId, firebaseComments);
-        } catch (_) {}
+        _memoryCache.put(eventId, firebaseComments);
         await _saveCommentsLocally(eventId, firebaseComments);
-        print(' Cache refreshed from Firebase');
+        await _saveCommentsToSQLite(eventId, firebaseComments); // 🟢 CAMBIO
+        print('♻️ Cache refreshed from Firebase');
       }
     } catch (_) {}
   }
