@@ -6,6 +6,7 @@ import 'package:app_flutter/util/event_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:app_flutter/util/analytics_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 
 class WeeklyChallengeViewModel extends ChangeNotifier {
@@ -13,6 +14,8 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
   final CommentService _commentService = CommentService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AnalyticsService _analyticsService = AnalyticsService();
+  String? _error;
+  String? get error => _error;
 
   int _completedCount = 0;
   bool _isLoadingStats = false;
@@ -32,8 +35,19 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
 
   Future<void> loadWeeklyChallenge() async {
     try {
+      final connectivity = await Connectivity().checkConnectivity();
+    final hasInternet = connectivity != ConnectivityResult.none;
+    if (!hasInternet) {
+      debugPrint("Sin conexión.");
+      _error = "No connection for the weekly challenge.";
+      notifyListeners();
+      
+
+      return;
+    }
       _isLoading = true;
       _errorMessage = null;
+      _error = null;
       notifyListeners();
 
       final user = _auth.currentUser;
@@ -83,6 +97,8 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
   if (user == null) return;
 
   try {
+    
+
     _isLoadingStats = true;
     notifyListeners();
 
@@ -96,7 +112,4 @@ class WeeklyChallengeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 }
-
-
-  
 }
