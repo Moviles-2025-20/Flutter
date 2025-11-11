@@ -69,7 +69,39 @@ void _loadCheckIn(event) async {
                   Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
                   const SizedBox(height: 16),
                   Text(
-                    "An error occurred while loading events",
+                    "No weekly challenge available for this week.",
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      viewModel.loadWeeklyChallenge();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Retry"),
+                    
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (viewModel.error != null) {
+          return Scaffold(
+              backgroundColor: const Color(0xFFFEFAED),
+            appBar: AppBar(
+              title: const Text("Weekly Challenge"),
+              backgroundColor: const Color(0xFF6389E2),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
+                  const SizedBox(height: 16),
+                  Text(
+                    "${viewModel.error}",
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
