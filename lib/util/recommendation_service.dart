@@ -27,7 +27,6 @@ class RecommendationsController {
     _startConnectivityListener();
   }
 
-  // ============== CONNECTIVITY LISTENER ==============
 
   void _startConnectivityListener() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
@@ -167,6 +166,11 @@ class RecommendationsController {
         });
   }
 
+  Future<Map<String, dynamic>?> _backgroundFetchAndStore(String userId) async {
+    final service = RecommendationService();
+    return await service.getRecommendations(userId);
+  }
+
   /// Set callback
   void setOnRecommendationsUpdated(void Function(Map<String, dynamic>) callback) {
     _onRecommendationsUpdated = callback;
@@ -205,10 +209,7 @@ class RecommendationsController {
   }
 }
 
-Future<Map<String, dynamic>?> _backgroundFetchAndStore(String userId) async {
-  final service = RecommendationService();
-  return await service.getRecommendations(userId);
-}
+
 
 
 //Fetch from back service
@@ -263,7 +264,6 @@ class RecommendationsStorageService {
     final stored = await getFromLocalStorage(userId);
     if (stored != null) {
       debugPrint('LocalStorage HIT: $userId');
-      // Put in cache for faster access next time
       _cache[userId] = stored;
       return stored;
     }
@@ -275,11 +275,9 @@ class RecommendationsStorageService {
   /// Store recommendations in BOTH cache and persistent storage
   Future<void> storeRecommendations(String userId, Map<String, dynamic> data) async {
     debugPrint('Storing recommendations for: $userId');
-    
-    // Store in memory cache (temporary)
+
     _cache[userId] = data;
     
-    // Store in local storage (permanent)
     await saveToLocalStorage(userId, data);
   }
 

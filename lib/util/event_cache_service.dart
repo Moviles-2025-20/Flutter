@@ -65,8 +65,7 @@ class EventsCacheService {
     // 3. Fetch from Firestore (Firebase handles its own internal cache)
     debugPrint('Fetching from Firestore: $cacheKey');
     final events = await _fetchFromFirestore(filters);
-    
-    // 4. Store in both caches
+
     _cache[cacheKey] = events;
     await _storeInSQLite(cacheKey, events);
     
