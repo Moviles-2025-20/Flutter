@@ -24,6 +24,13 @@ class EventsMapViewModel extends ChangeNotifier {
   Event? _selectedEvent;
   Event? get selectedEvent => _selectedEvent;
 
+  static final BitmapDescriptor _nearbyIcon = 
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
+  static final BitmapDescriptor _normalIcon = 
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+  static final BitmapDescriptor _userIcon = 
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
+
   void selectEvent(Event event) {
     _selectedEvent = event;
     notifyListeners();
@@ -332,9 +339,9 @@ class EventsMapViewModel extends ChangeNotifier {
   BitmapDescriptor _getMarkerIcon(Event event, bool isNearby) {
     // Si es cercano, usar colores vibrantes/especiales
     if (isNearby) {
-      return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
+      return _nearbyIcon;
     }
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+    return _normalIcon;
   }
 
   // Create user location marker
@@ -346,7 +353,7 @@ class EventsMapViewModel extends ChangeNotifier {
         title: "Your location",
         snippet: "You are here",
       ),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      icon: _userIcon,
     );
   }
 
