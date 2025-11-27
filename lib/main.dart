@@ -9,6 +9,7 @@ import 'package:app_flutter/util/auth_service.dart';
 import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
 import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
+import 'package:app_flutter/util/local_DB_service.dart';
 import 'package:app_flutter/util/recommendation_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final localUserService = LocalUserService();
+  await localUserService.database;
 
   final crashTracker = CrashTracker();
   await crashTracker.initializeCrashlytics();
@@ -129,7 +133,7 @@ class MainPageState extends State<MainPage> {
       );
     }
 
-    print('Navigation stack: $_navigationStack');
+    debugPrint('Navigation stack: $_navigationStack');
   }
 
   void _onItemTapped(int index, {Map<String, dynamic>? arguments}) {
@@ -147,7 +151,7 @@ class MainPageState extends State<MainPage> {
       );
     }
 
-    print('Navigation stack: $_navigationStack');
+    debugPrint('Navigation stack: $_navigationStack');
   }
 
   Future<bool> _onWillPop() async {
@@ -165,7 +169,7 @@ class MainPageState extends State<MainPage> {
         _navigationStack.removeLast();
         _selectedIndex = _navigationStack.last;
       });
-      print('Back to tab: $_selectedIndex');
+      debugPrint('Back to tab: $_selectedIndex');
       return false;
     }
 
