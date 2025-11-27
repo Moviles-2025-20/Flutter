@@ -414,8 +414,10 @@ class EventsMapViewModel extends ChangeNotifier {
 
 
 
-    @override
+  @override
   void dispose() {
+    //Optimizacion
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 }
