@@ -46,6 +46,7 @@ class BadgeMedalViewModel extends ChangeNotifier {
     await badgeRepository.createBadges(defaultBadges);
   }
 
+
   /// Cargar todas las medallas disponibles
   Future<void> loadAllBadgeMedals() async {
     isLoading = true;
@@ -67,6 +68,20 @@ class BadgeMedalViewModel extends ChangeNotifier {
   Future<void> loadUserBadges() async {
     try {
       userBadges = await badgeRepository.getUserBadges(userId);
+      if (userBadges.isEmpty) {
+        debugPrint('UserBadges vacío, inicializando...');
+        
+        // Obtener IDs de todas las medallas
+        final badgeIds = allBadgeMedals.map((badge) => badge.id).toList();
+        
+        // Inicializar
+        await badgeRepository.initializeUserBadges(userId, badgeIds);
+        
+        // Cargar nuevamente después de inicializar
+        userBadges = await badgeRepository.getUserBadges(userId);
+        
+        debugPrint('UserBadges inicializados: ${userBadges.length}');
+      }
       unlockedBadgeMedals = userBadges.where((b) => b.isUnlocked).toList();
       notifyListeners();
     } catch (e) {
@@ -136,7 +151,6 @@ class BadgeMedalViewModel extends ChangeNotifier {
         isUnlocked: userBadge.isUnlocked || shouldUnlock,
         progress: shouldUnlock ? (badgeMedal.criteriaValue as int) : newProgress,
         earnedAt: shouldUnlock ? DateTime.now() : userBadge.earnedAt,
-        synced: 0,
       );
 
       // Guardar en Firestore
@@ -179,59 +193,4 @@ class BadgeMedalViewModel extends ChangeNotifier {
     return ((unlocked / allBadgeMedals.length) * 100).toInt();
   }
 
-  /// Demo data
-  List<Badge_Medal> _getDemoBadgeMedals() {
-    return [
-      Badge_Medal(
-        id: '1',
-        name: 'Primer Paso',
-        description: 'Completa tu primera tarea',
-        icon: 'assets/Badge_Medals/first_step.png',
-        rarity: 'common',
-        criteriaType: 'tasks_completed',
-        criteriaValue: 1,
-        isSecret: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      Badge_Medal(
-        id: '2',
-        name: 'Productivo',
-        description: 'Completa 10 tareas',
-        icon: 'assets/Badge_Medals/productive.png',
-        rarity: 'rare',
-        criteriaType: 'tasks_completed',
-        criteriaValue: 10,
-        isSecret: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      Badge_Medal(
-        id: '3',
-        name: 'Streaker',
-        description: 'Mantén una racha de 7 días',
-        icon: 'assets/Badge_Medals/streaker.png',
-        rarity: 'epic',
-        criteriaType: 'streak_days',
-        criteriaValue: 7,
-        isSecret: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-  }
-
-  List<UserBadge> _getDemoUserBadges() {
-    return allBadgeMedals.map((badgeMedal) {
-      return UserBadge(
-        id: 'ub_${badgeMedal.id}',
-        userId: userId,
-        badgeId: badgeMedal.id,
-        isUnlocked: badgeMedal.id == '1',
-        progress: badgeMedal.id == '1' ? 1 : 0,
-        earnedAt: badgeMedal.id == '1' ? DateTime.now() : null,
-        synced: 1,
-      );
-    }).toList();
-  }
 }

@@ -196,7 +196,6 @@ class BadgeRepository implements IBadgeRepository {
           isUnlocked: false,
           progress: 0,
           earnedAt: null,
-          synced: 1,
         );
 
         final docRef = _firestore

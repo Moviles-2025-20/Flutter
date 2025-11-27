@@ -5,7 +5,6 @@ class UserBadge {
   final bool isUnlocked;           // Si ya lo ganó
   final int progress;              // Progreso actual
   final DateTime? earnedAt;        // Fecha del logro
-  final int synced;                // Para offline-first (0/1 opcional)
 
   UserBadge({
     required this.id,
@@ -14,7 +13,6 @@ class UserBadge {
     required this.isUnlocked,
     required this.progress,
     required this.earnedAt,
-    required this.synced,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,7 +23,6 @@ class UserBadge {
       'isUnlocked': isUnlocked,
       'progress': progress,
       'earnedAt': earnedAt?.toIso8601String(),
-      'synced': synced,
     };
   }
 
@@ -37,7 +34,6 @@ class UserBadge {
       isUnlocked: map['isUnlocked'] ?? false,
       progress: map['progress'] ?? 0,
       earnedAt: map['earnedAt'] != null ? DateTime.parse(map['earnedAt']) : null,
-      synced: map['synced'] ?? 0,
     );
   }
 }

@@ -29,6 +29,7 @@ class _BadgeViewState extends State<BadgeView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _viewModel.loadAllBadgeMedals();
+      await _viewModel.loadUserBadges();
     });
   }
 
@@ -128,7 +129,7 @@ class _BadgeViewState extends State<BadgeView> {
               child: LinearProgressIndicator(
                 value: total > 0 ? progress / 100 : 0,
                 minHeight: 8,
-                color: const Color.fromARGB(255, 237, 98, 117),          // ← Color de la barra llena
+                color: const Color.fromARGB(255, 171, 171, 171),          // ← Color de la barra llena
                 backgroundColor: Color.fromARGB(255, 253, 253, 253),
               ),
             ),
@@ -171,8 +172,8 @@ class _BadgeViewState extends State<BadgeView> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+            mainAxisSpacing: 15,
+            crossAxisSpacing: 15,
           ),
           itemCount: badges.length,
           itemBuilder: (context, index) {
@@ -237,9 +238,9 @@ class _BadgeViewState extends State<BadgeView> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                crossAxisCount: 2,
+                mainAxisSpacing: 15,
+                crossAxisSpacing: 15,
               ),
               itemCount: badgesByRarity.length,
               itemBuilder: (context, index) {
@@ -257,7 +258,6 @@ class _BadgeViewState extends State<BadgeView> {
                       isUnlocked: false,
                       progress: 0,
                       earnedAt: null,
-                      synced: 0,
                     );
 
                 return _buildBadgeCard(
@@ -339,12 +339,15 @@ class _BadgeViewState extends State<BadgeView> {
               ),
 
             // Contenido
-            Column(
+            Center(
+              child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center, // <-- esto ayuda
               children: [
                 // Icono principal
                 if (isUnlocked)
-                  const Icon(Icons.stars, color: Colors.amber, size: 24)
+                  const Icon(Icons.stars, color: Colors.amber, size: 35)
+                  //_buildIcon(isUnlocked, isInProgress, badge)
                 else if (isInProgress)
                   Container(
                     width: 50,
@@ -380,7 +383,7 @@ class _BadgeViewState extends State<BadgeView> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: isLocked ? Colors.grey[600] : Colors.black,
                   ),
@@ -421,7 +424,7 @@ class _BadgeViewState extends State<BadgeView> {
                   ),
               ],
             ),
-          ],
+        )],
         ),
       ),
     );
@@ -588,6 +591,45 @@ class _BadgeViewState extends State<BadgeView> {
       },
     );
   }
+
+  Widget _buildIcon(bool isUnlocked, bool isInProgress, Badge_Medal badge) {
+
+    if (isUnlocked) {
+      // Si es URL
+      if (badge.icon.startsWith('http')) {
+        return Image.network(
+          badge.icon,
+          width: 32,
+          height: 32,
+          fit: BoxFit.contain,
+        );
+      }
+
+      final String assetPath = badge.icon.startsWith('assets/')
+          ? badge.icon
+          : 'assets/${badge.icon}';
+
+      return SizedBox(
+        width: 100,
+        height: 100,
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: Image.asset(
+            assetPath,
+          ),
+        ),
+      );
+
+    }
+
+    if (isInProgress) {
+      return const Icon(Icons.schedule, color: Colors.orange, size: 24);
+    }
+
+    return const Icon(Icons.lock_outline, color: Colors.grey, size: 24);
+  }
+
+
 
   @override
   void dispose() {
