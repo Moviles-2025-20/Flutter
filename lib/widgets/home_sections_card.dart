@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum CardType { weeklyChallenge, FreeTimeEvents, wishMeLuck, map }
+import '../util/quizConstant.dart';
+
+enum CardType { weeklyChallenge, FreeTimeEvents, MoodQuiz, map }
 
 class HomeSectionsCard extends StatelessWidget {
   final Function(CardType) onCardTap;
@@ -75,11 +77,30 @@ class _MindCardsGrid extends StatelessWidget {
           color: Color(0xFFED6275),
           onTap: () => onCardTap(CardType.FreeTimeEvents),
         ),
-        MindCard(
-          title: 'Wish me Luck',
-          color: Color(0xFFED6275),
-          onTap: () => onCardTap(CardType.wishMeLuck),
+        FutureBuilder<List<IconData>>(
+          future: QuizCache.getHomeIcons(),
+          builder: (context, snapshot) {
+            final icons = snapshot.data ?? [Icons.psychology];
+
+            return MindCard(
+              title: 'Mood Quiz',
+              color: Color(0xFFED6275),
+              onTap: () => onCardTap(CardType.MoodQuiz),
+              leading: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: icons
+                    .map(
+                      (icon) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Icon(icon, color: Colors.white, size: 22),
+                  ),
+                )
+                    .toList(),
+              ),
+            );
+          },
         ),
+
         MindCard(
           title: 'Map',
           color: Color(0xFF6389E2),
@@ -95,12 +116,14 @@ class MindCard extends StatelessWidget {
   final String title;
   final Color color;
   final VoidCallback onTap;
+  final Widget? leading;
 
   const MindCard({
     Key? key,
     required this.title,
     required this.color,
     required this.onTap,
+    this.leading,
   }) : super(key: key);
 
   @override
@@ -121,13 +144,19 @@ class MindCard extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) leading!,
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

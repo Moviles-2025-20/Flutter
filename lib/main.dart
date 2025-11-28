@@ -1,4 +1,6 @@
 import 'package:app_flutter/firebase_options.dart';
+import 'package:app_flutter/pages/Quiz/view/quizView.dart';
+import 'package:app_flutter/pages/Quiz/viewmodel/quizViewModel.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
@@ -78,7 +80,6 @@ class MyApp extends StatelessWidget {
           '/start': (context) => const Start(),
           '/start/login': (context) => const Login(),
           '/home': (context) => const MainPage(),
-
           '/wishMeLuck': (context) => const WishMeLuckView(),
         },
         onGenerateRoute: (settings) {
