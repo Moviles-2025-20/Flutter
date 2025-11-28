@@ -1,9 +1,11 @@
 import 'package:app_flutter/pages/badges/model/badge.dart';
 import 'package:app_flutter/pages/badges/model/user_badge.dart';
+import 'package:app_flutter/pages/badges/view/badge_detail_view.dart';
 import 'package:app_flutter/pages/badges/viewModel/badges_view_model.dart';
 import 'package:app_flutter/util/badges_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:quiver/strings.dart';
 
 class BadgeView extends StatefulWidget {
   final String userId;
@@ -17,6 +19,7 @@ class _BadgeViewState extends State<BadgeView> {
   late BadgeMedalViewModel _viewModel;
   late BadgeRepository _repository;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  int _selectedTab = 0; // 0=All, 1=Unlocked, 2=Locked
 
   @override
   void initState() {
@@ -47,7 +50,9 @@ class _BadgeViewState extends State<BadgeView> {
           ),
         ),
         backgroundColor: const Color(0xFF6389E2),
-        centerTitle: true ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: ListenableBuilder(
         listenable: _viewModel,
         builder: (context, _) {
@@ -70,17 +75,18 @@ class _BadgeViewState extends State<BadgeView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header con progreso
                   _buildProgressHeader(),
                   const SizedBox(height: 24),
-                  _buildSection(
-                    title: 'Unlocked',
-                    badges: _viewModel.unlockedBadgeMedals,
-                    isUnlocked: true,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildRaritySection(),
-                  const SizedBox(height: 24),
-                  _buildSecretSection(),
+
+                  // Tabs: All, Unlocked, Locked
+                  _buildTabs(),
+                  const SizedBox(height: 20),
+
+                  // Contenido según tab seleccionado
+                  if (_selectedTab == 0) _buildAllBadgesView(),
+                  if (_selectedTab == 1) _buildUnlockedView(),
+                  if (_selectedTab == 2) _buildLockedView(),
                 ],
               ),
             ),
@@ -95,50 +101,70 @@ class _BadgeViewState extends State<BadgeView> {
     final unlocked = _viewModel.unlockedBadgeMedals.length;
     final total = _viewModel.allBadgeMedals.length;
 
-    return Card(
-      color: const Color.fromARGB(255, 237, 98, 117),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 255, 255, 255)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 202, 202, 202).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'General Progress',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
-                Text(
-                  '$unlocked/$total',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$unlocked/$total',
+                      style: const TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color:  Color(0xFFE3944F),
+                      ),
+                    ),
+                    const Text(
+                      'Badges Unlocked',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color.fromARGB(179, 0, 0, 0),
+                      ),
+                    ),
+                  ],
+                )
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: LinearProgressIndicator(
                 value: total > 0 ? progress / 100 : 0,
-                minHeight: 8,
-                color: const Color.fromARGB(255, 171, 171, 171),          // ← Color de la barra llena
-                backgroundColor: Color.fromARGB(255, 253, 253, 253),
+                minHeight: 20,
+                backgroundColor: const Color.fromARGB(255, 190, 190, 190).withOpacity(0.3),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFFE3944F),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              '$progress% completed',
-              style: TextStyle(
-                fontSize: 14,
-                color: const Color.fromARGB(255, 252, 230, 230),
+              '$progress% Complete',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color.fromARGB(255, 99, 99, 99),
               ),
             ),
           ],
@@ -147,47 +173,119 @@ class _BadgeViewState extends State<BadgeView> {
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required List<UserBadge> badges,
-    required bool isUnlocked,
-  }) {
-    if (badges.isEmpty) {
-      return const SizedBox.shrink();
+  Widget _buildTabs() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          _buildTabButton('All', 0),
+          _buildTabButton('Unlocked', 1),
+          _buildTabButton('Locked', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, int index) {
+    final isSelected = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTab = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF6389E2)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllBadgesView() {
+    return _buildRaritySection();
+  }
+
+  Widget _buildUnlockedView() {
+    if (_viewModel.unlockedBadgeMedals.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.lock_outline,
+        title: 'No badges unlocked yet',
+        subtitle: 'Complete activities to unlock badges',
+      );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 15,
-            crossAxisSpacing: 15,
-          ),
-          itemCount: badges.length,
-          itemBuilder: (context, index) {
-            final userBadge = badges[index];
-            final badge = _viewModel.getBadgeMedalById(userBadge.badgeId);
-            if (badge == null) return const SizedBox.shrink();
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _viewModel.unlockedBadgeMedals.length,
+      itemBuilder: (context, index) {
+        final userBadge = _viewModel.unlockedBadgeMedals[index];
+        final badge = _viewModel.getBadgeMedalById(userBadge.badgeId);
+        if (badge == null) return const SizedBox.shrink();
 
-            return _buildBadgeCard(
-              badge: badge,
-              userBadge: userBadge,
+        return _buildBadgeCard(badge: badge, userBadge: userBadge);
+      },
+    );
+  }
+
+  Widget _buildLockedView() {
+    final lockedBadges = _viewModel.allBadgeMedals
+        .where((b) => !_viewModel.unlockedBadgeMedals.any((ub) => ub.badgeId == b.id))
+        .toList();
+
+    if (lockedBadges.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.check_circle_outline,
+        title: 'All unlocked!',
+        subtitle: 'You\'ve unlocked all available badges',
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: lockedBadges.length,
+      itemBuilder: (context, index) {
+        final badge = lockedBadges[index];
+        final userBadge = _viewModel.getUserBadgeProgress(badge.id) ??
+            UserBadge(
+              id: '${_viewModel.userId}_${badge.id}',
+              userId: _viewModel.userId,
+              badgeId: badge.id,
+              isUnlocked: false,
+              progress: 0,
+              earnedAt: null,
             );
-          },
-        ),
-      ],
+
+        return _buildBadgeCard(badge: badge, userBadge: userBadge);
+      },
     );
   }
 
@@ -197,13 +295,12 @@ class _BadgeViewState extends State<BadgeView> {
       'common': Colors.grey,
       'rare': Colors.blue,
       'epic': Colors.purple,
-      'legendary': Colors.orange,
+      'legendary': const Color.fromARGB(255, 255, 213, 0),
     };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: rarities.map((rarity) {
-        // Obtener TODAS las medallas de esta rareza
         final badgesByRarity = _viewModel.allBadgeMedals
             .where((badge) => badge.rarity == rarity)
             .toList();
@@ -213,44 +310,49 @@ class _BadgeViewState extends State<BadgeView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: colors[rarity],
-                    borderRadius: BorderRadius.circular(2),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: colors[rarity],
+                      borderRadius: BorderRadius.circular(3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors[rarity]!.withOpacity(0.5),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  rarity.toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                  const SizedBox(width: 10),
+                  Text(
+                    rarity.toUpperCase(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 15,
-                crossAxisSpacing: 15,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.8,
               ),
               itemCount: badgesByRarity.length,
               itemBuilder: (context, index) {
                 final badge = badgesByRarity[index];
-
-                // Obtener el progreso del usuario para esta medalla
-                final userBadge = _viewModel.getUserBadgeProgress(badge.id);
-
-                // Si no tiene progreso, crear uno por defecto
-                final displayUserBadge = userBadge ??
+                final userBadge = _viewModel.getUserBadgeProgress(badge.id) ??
                     UserBadge(
                       id: '${_viewModel.userId}_${badge.id}',
                       userId: _viewModel.userId,
@@ -260,48 +362,13 @@ class _BadgeViewState extends State<BadgeView> {
                       earnedAt: null,
                     );
 
-                return _buildBadgeCard(
-                  badge: badge,
-                  userBadge: displayUserBadge,
-                );
+                return _buildBadgeCard(badge: badge, userBadge: userBadge);
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildSecretSection() {
-    final secretBadges = _viewModel.getSecretLockedBadgeMedals();
-    if (secretBadges.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Secret Badges',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-          ),
-          itemCount: secretBadges.length,
-          itemBuilder: (context, index) {
-            return _buildLockedBadgeCard();
-          },
-        ),
-      ],
     );
   }
 
@@ -315,321 +382,250 @@ class _BadgeViewState extends State<BadgeView> {
 
     return GestureDetector(
       onTap: () => _showBadgeDetails(badge, userBadge),
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: isUnlocked
-                ? Colors.amber
-                : isInProgress
-                    ? Colors.orange[400]!
-                    : Colors.grey[300]!,
-            width: isUnlocked || isInProgress ? 2 : 1,
-          ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Stack(
           children: [
-            // Fondo oscuro para medallas bloqueadas
-            if (isLocked)
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.black.withOpacity(0.3),
+            // Card base
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: isUnlocked
+                    ? const Color.fromARGB(255, 255, 255, 255)
+                    : isInProgress
+                        ?  const Color.fromARGB(255, 255, 255, 255)
+                        : const Color.fromARGB(255, 255, 255, 255),
+                border: Border.all(
+                  color: isUnlocked
+                      ? Colors.amber.withOpacity(0.3)
+                      : isInProgress
+                          ? Colors.orange.withOpacity(0.3)
+                          : Colors.grey[200]!,
+                  width: 1.5,
                 ),
               ),
+              child: isLocked
+                  ? Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                      ),
+                    )
+                  : null,
+            ),
 
             // Contenido
-            Center(
+            Padding(
+              padding: const EdgeInsets.all(12),
               child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center, // <-- esto ayuda
-              children: [
-                // Icono principal
-                if (isUnlocked)
-                  const Icon(Icons.stars, color: Colors.amber, size: 35)
-                  //_buildIcon(isUnlocked, isInProgress, badge)
-                else if (isInProgress)
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icono
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
-                      color: Colors.orange[100],
-                      borderRadius: BorderRadius.circular(8),
+                      shape: BoxShape.circle,
+                      color: isUnlocked
+                          ? Colors.amber.withOpacity(0.2)
+                          : isInProgress
+                              ? Colors.orange.withOpacity(0.2)
+                              : Colors.grey[100],
                     ),
-                    child: Icon(
-                      Icons.schedule,
-                      color: Colors.orange[600],
-                      size: 24,
+                    child: Center(
+                      child: isUnlocked
+                          ? const Icon(Icons.emoji_events, color: Colors.amber, size: 40)
+                          : isInProgress
+                              ? Icon(Icons.schedule,
+                                  color: Colors.orange[600], size: 36)
+                              : Icon(Icons.lock_outline,
+                                  color: Colors.grey[500], size: 36),
                     ),
-                  )
-                else
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child:
-                        const Icon(Icons.lock_outline, color: Colors.grey),
                   ),
+                  const SizedBox(height: 12),
 
-                const SizedBox(height: 8),
-
-                // Nombre de la medalla
-                Text(
-                  badge.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isLocked ? Colors.grey[600] : Colors.black,
+                  // Nombre
+                  Text(
+                    badge.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isLocked ? Colors.grey[500] : Colors.black87,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
 
-                // Progreso
-                if (isInProgress)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Column(
+                  // Progreso o estado
+                  if (isInProgress)
+                    Column(
                       children: [
-                        Text(
-                          '${userBadge.progress}/${badge.criteriaValue}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
                         SizedBox(
-                          width: 40,
+                          width: 50,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(2),
                             child: LinearProgressIndicator(
                               value: userBadge.progress /
                                   (badge.criteriaValue as int),
-                              minHeight: 3,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.orange[400]!,
+                              minHeight: 4,
+                              backgroundColor: Colors.orange.withOpacity(0.2),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.orange,
                               ),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 6),
+                         Text(
+                          '${userBadge.progress}/${badge.criteriaValue}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                         Text(
+                          badge.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromARGB(255, 134, 134, 134),
+                          ),
+                        ),
+                        
+                      ],
+                    )
+                  else if (isUnlocked)
+                   Column(
+                    children: [Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.check_circle, color: Color.fromARGB(255, 0, 172, 55), size: 20),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Unlocked',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromARGB(255, 0, 172, 55),
+                          ),
+                        )
                       ],
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 6),
+                      Text(
+                          badge.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromARGB(255, 134, 134, 134),
+                          ),
+                        ),
+                    ],
+                   )
+                    
+                    
+                  else
+                    Column(
+                      children: [
+                        Text(
+                          '0/${badge.criteriaValue}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          badge.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromARGB(255, 134, 134, 134),
+                          ),
+                        ),
+                      ],
+                    )
+                    
+                ],
+              ),
             ),
-        )],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildLockedBadgeCard() {
-    return Card(
-      color: Colors.grey[200],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: Icon(Icons.help_outline, color: Colors.grey, size: 32),
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
       ),
     );
   }
 
   void _showBadgeDetails(Badge_Medal badge, UserBadge userBadge) {
-    final isUnlocked = userBadge.isUnlocked;
-    final isInProgress = !isUnlocked && userBadge.progress > 0;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFFFDFBF7),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: isUnlocked
-                          ? Colors.amber[100]
-                          : isInProgress
-                              ? Colors.orange[100]
-                              : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      isUnlocked
-                          ? Icons.star
-                          : isInProgress
-                              ? Icons.schedule
-                              : Icons.lock_outline,
-                      size: 40,
-                      color: isUnlocked
-                          ? Colors.amber
-                          : isInProgress
-                              ? Colors.orange
-                              : Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          badge.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          badge.rarity.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        if (isUnlocked)
-                          const SizedBox(height: 4),
-                        if (isUnlocked)
-                          Text(
-                            'Unlocked',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.green[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        if (isInProgress)
-                          const SizedBox(height: 4),
-                        if (isInProgress)
-                          Text(
-                            'In progress',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                badge.description,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              // Mostrar progreso o estado desbloqueado
-              if (isUnlocked)
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Unlocked ${userBadge.earnedAt?.toString().split(' ')[0] ?? 'today'}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                )
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'You haven\'t complete the requirements.',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: userBadge.progress /
-                            (badge.criteriaValue as int),
-                        minHeight: 8,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isInProgress ? Colors.orange : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${userBadge.progress}/${badge.criteriaValue}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildIcon(bool isUnlocked, bool isInProgress, Badge_Medal badge) {
-
-    if (isUnlocked) {
-      // Si es URL
-      if (badge.icon.startsWith('http')) {
-        return Image.network(
-          badge.icon,
-          width: 32,
-          height: 32,
-          fit: BoxFit.contain,
-        );
-      }
-
-      final String assetPath = badge.icon.startsWith('assets/')
-          ? badge.icon
-          : 'assets/${badge.icon}';
-
-      return SizedBox(
-        width: 100,
-        height: 100,
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: Image.asset(
-            assetPath,
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BadgeDetailView(
+          badge: badge,
+          userBadge: userBadge,
         ),
-      );
-
-    }
-
-    if (isInProgress) {
-      return const Icon(Icons.schedule, color: Colors.orange, size: 24);
-    }
-
-    return const Icon(Icons.lock_outline, color: Colors.grey, size: 24);
-  }
-
-
+      ),
+    );
+  } 
 
   @override
   void dispose() {
