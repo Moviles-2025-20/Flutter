@@ -1,5 +1,6 @@
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
 import 'package:app_flutter/pages/notification.dart';
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:app_flutter/widgets/list_events/event_list.dart';
 import 'package:app_flutter/widgets/list_events/event_map.dart';
 import 'package:app_flutter/widgets/list_events/filters_widgets.dart';
@@ -42,12 +43,12 @@ class EventsMapListContent extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            icon: const Icon(Icons.article, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NotificationsPage(),
+                  builder: (context) => const NewsView(),
                 ),
               );
             },

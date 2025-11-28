@@ -2,7 +2,9 @@ import 'package:app_flutter/firebase_options.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
+import 'package:app_flutter/pages/news/viewmodels/news_view_model.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
 import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/auth_service.dart';
@@ -63,6 +65,10 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => CommentViewModel(),
+          
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NewsViewModel(),
         ),
       ],
       child: MaterialApp(
