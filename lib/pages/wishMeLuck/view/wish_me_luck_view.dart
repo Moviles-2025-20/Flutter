@@ -46,11 +46,15 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   DateTime? _lastShakeTime;
   static const double _shakeThreshold = 20.0; //
   static const int _shakeCooldown = 3000; // Cooldown de 3 segundos entre sacudidas, evita múltiples detecciones rápidas
+  bool _isActive = false;
 
 
   @override
   void initState() {
     super.initState();
+    _isActive = true;
+    _initAccelerometer();
+
 
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -72,6 +76,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   }
 
   void _initAccelerometer() {
+    _accelerometerSubscription?.cancel();
     // The sensors_plus package is constantly updated, so we use the event stream to get real-time data of the accelerometer
     _accelerometerSubscription = accelerometerEventStream().listen( 
           (AccelerometerEvent event) {
@@ -86,6 +91,7 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
   /* Function used to detect if the movement of the device is a shake, using the magnitude of the threshold */
   void _detectShake(AccelerometerEvent event) {
     // Find the magnitude of the acceleration vector
+    if (!_isActive) return;
     final double magnitude = sqrt(
         event.x * event.x +
         event.y * event.y +
@@ -139,6 +145,8 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
 
   @override
   void dispose() {
+    _isActive = false;
+    _accelerometerSubscription?.cancel();
     _shakeController.dispose();
     super.dispose();
   }
