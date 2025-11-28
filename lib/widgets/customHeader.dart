@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:flutter/material.dart';
 
 import '../pages/notification.dart';
@@ -114,12 +115,12 @@ class _NotificationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.notifications_none, color: Colors.white),
+      icon: const Icon(Icons.description, color: Colors.white),
       onPressed: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const NotificationsPage(),
+            builder: (context) => const NewsView(),
           ),
         );
       },

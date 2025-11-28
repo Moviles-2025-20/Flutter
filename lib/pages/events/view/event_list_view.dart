@@ -43,7 +43,7 @@ class EventsMapListContent extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.article, color: Colors.white),
+            icon: const Icon(Icons.description, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,

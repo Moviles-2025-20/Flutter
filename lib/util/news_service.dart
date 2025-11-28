@@ -95,6 +95,8 @@ class NewsService {
       final snap = await tx.get(ref);
       final List ratings = snap['ratings'] ?? [];
 
+
+
       if (ratings.contains(uid)) {
         tx.update(ref, {
           'ratings': FieldValue.arrayRemove([uid])

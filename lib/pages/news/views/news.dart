@@ -64,7 +64,7 @@ class _NewsViewState extends State<NewsView> {
                 children: [
                   const Icon(Icons.cloud_off, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text(vm.error!),
+                  Text("No news available at the moment."),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: vm.loadNews,
