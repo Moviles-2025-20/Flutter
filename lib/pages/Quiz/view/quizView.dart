@@ -8,7 +8,11 @@ import '../model/questionModel.dart';
 import '../viewmodel/quizViewModel.dart';
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+  final bool forceRetake;
+  const QuizScreen({
+    super.key,
+    this.forceRetake = false,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -26,29 +30,45 @@ class _QuizScreenState extends State<QuizScreen> {
 
     // Verificamos si el usuario ya completó el quiz
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final hasCompleted = await QuizCache.hasCompletedQuiz();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        // Si no hay usuario, cargamos el quiz
+        if (mounted) {
+          context.read<QuizViewModel>().loadQuiz();
+        }
+        return;
+      }
 
-      if (hasCompleted && mounted) {
-        // Si ya completó, mostramos el último resultado
-        final lastResult = await QuizCache.getLastResult();
-        if (lastResult != null && mounted) {
-          // Navegamos directamente a los resultados
+      try {
+        // Intentamos obtener el último resultado desde las capas de caché
+        final lastResult = await QuizStorageManager.getLatestResult(user.uid);
+
+        if (!widget.forceRetake && lastResult != null && mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (_) => QuizResultScreen(
-                result: lastResult,
-                scores: Map<String, int>.from(lastResult['scores'] ?? {}),
+                result: {
+                  'categories': lastResult.resultCategories,
+                  'type': lastResult.resultType,
+                  'scores': lastResult.scores,
+                },
+                scores: lastResult.scores,
               ),
             ),
           );
         } else {
-          // Si no hay resultado guardado, cargamos el quiz
+          if (mounted) {
+            context.read<QuizViewModel>().loadQuiz();
+          }
+        }
+
+      } catch (e) {
+        // Si hay error al cargar, simplemente mostramos el quiz
+        print('Error loading cached result: $e');
+        if (mounted) {
           context.read<QuizViewModel>().loadQuiz();
         }
-      } else {
-        // Si no ha completado, cargamos el quiz normal
-        context.read<QuizViewModel>().loadQuiz();
       }
     });
   }
@@ -559,8 +579,13 @@ class QuizResultScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      // Limpiamos el caché para poder hacer un nuevo quiz
-                      await QuizCache.clearCache();
+                      // Limpiamos TODAS las capas de caché
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) return;
+                      debugPrint('Offline desde la view');
+                      await QuizStorageManager.clearAll(user.uid);
+
+
 
                       if (!context.mounted) return;
 
@@ -570,7 +595,8 @@ class QuizResultScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => ChangeNotifierProvider(
                             create: (_) => QuizViewModel(),
-                            child: const QuizScreen(),
+                            child: const QuizScreen(forceRetake: true),
+
                           ),
                         ),
                       );
@@ -588,8 +614,8 @@ class QuizResultScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      // Guardamos el resultado en caché local
-                      await QuizCache.saveLastResult(result);
+                      // No hacemos nada extra aquí porque ya se guardó todo
+                      // en _showResults() cuando se navegó a esta pantalla
 
                       if (!context.mounted) return;
 

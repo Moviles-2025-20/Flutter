@@ -78,7 +78,7 @@ class _MindCardsGrid extends StatelessWidget {
           onTap: () => onCardTap(CardType.FreeTimeEvents),
         ),
         FutureBuilder<List<IconData>>(
-          future: QuizCache.getHomeIcons(),
+          future: QuizStorageManager.getHomeIcons(),
           builder: (context, snapshot) {
             final icons = snapshot.data ?? [Icons.psychology];
 

@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:app_flutter/util/quizConstant.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -493,6 +495,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 const Divider(color: Colors.grey, thickness: 1),
                 const SizedBox(height: 30),
 
+                const ProfileQuizCategory(),
+
+                const SizedBox(height: 30),
+
                 // ---------------------- Botones ----------------------
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
@@ -618,5 +624,91 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 }
+
+
+
+/// Widget que muestra la categoría del quiz del usuario en Profile
+class ProfileQuizCategory extends StatefulWidget {
+  const ProfileQuizCategory({super.key});
+
+  @override
+  State<ProfileQuizCategory> createState() => _ProfileQuizCategoryState();
+}
+
+class _ProfileQuizCategoryState extends State<ProfileQuizCategory> {
+  late Future<List<String>> _categoriesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _categoriesFuture = QuizStorageManager.getCategories();
+  }
+
+  /// Llamar cuando el quiz cambie
+  void refresh() {
+    setState(_load);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<String>>(
+      future: _categoriesFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final categories = snapshot.data!;
+        final isMixed = categories.length > 1;
+
+        return Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isMixed
+                  ? [Colors.purple.shade50, Colors.blue.shade50]
+                  : [
+                QuizConstants.categoryColors[categories.first]!
+                    .withOpacity(0.15),
+                QuizConstants.categoryColors[categories.first]!
+                    .withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                QuizConstants.categoryIcons[categories.first],
+                size: 36,
+                color: QuizConstants.categoryColors[categories.first],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  isMixed
+                      ? categories
+                      .map(QuizConstants.getCategoryName)
+                      .join(' & ')
+                      : QuizConstants.getCategoryName(categories.first),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
 
 

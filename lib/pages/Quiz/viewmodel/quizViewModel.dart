@@ -5,20 +5,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../util/firebase_service.dart';
+import '../../../util/quizConstant.dart'; // ← NUEVO import
 import '../model/optionModel.dart';
 import '../model/questionModel.dart';
-
 
 class QuizViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
 
-  //  Data
+  // ============ DATA ============
   List<Question> _selectedQuestions = [];
   int _currentIndex = 0;
-  bool _loading = false;
+  bool _loading = true;
   bool _completed = false;
 
-  //  Scoring
+  // NUEVO: Guardamos las respuestas del usuario para cada pregunta
+  // Key = questionId, Value = la opción que seleccionó
+  final Map<String, Option> _userAnswers = {};
+
+  // ============ SCORING ============
   final Map<String, int> _scores = {
     'cultural_explorer': 0,
     'social_planner': 0,
@@ -26,35 +30,31 @@ class QuizViewModel extends ChangeNotifier {
     'chill': 0,
   };
 
-  final Map<String, Option> _userAnswers = {};
-
-  //  Getters (UI)
+  // ============ GETTERS (para la UI) ============
   List<Question> get questions => _selectedQuestions;
-
   bool get isLoading => _loading;
   bool get isCompleted => _completed;
-
   int get currentIndex => _currentIndex;
-
   Question get currentQuestion => _selectedQuestions[_currentIndex];
-
   bool get isLast => _currentIndex == _selectedQuestions.length - 1;
   bool get isFirst => _currentIndex == 0;
 
+  // NUEVO: Permite saber si el usuario ya respondió la pregunta actual
   Option? get currentAnswer => _userAnswers[currentQuestion.id];
 
+  // NUEVO: Getter público para acceder a los scores desde la UI
   Map<String, int> get scores => Map.unmodifiable(_scores);
 
+  // ============ CONFIGURACIÓN DE CACHÉ ============
   QuizViewModel() {
-    // caché de Firebase para que funcione offline
+    // Activamos caché de Firebase para que funcione offline
     _firestore.settings = const Settings(
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
   }
 
-
-
+  // ============ CARGAR PREGUNTAS ============
   Future<void> loadQuiz() async {
     _loading = true;
     notifyListeners();
@@ -89,6 +89,8 @@ class QuizViewModel extends ChangeNotifier {
     }
   }
 
+  // ============ NAVEGACIÓN ENTRE PREGUNTAS ============
+  // NUEVO: Método para avanzar a la siguiente pregunta
   void nextQuestion() {
     if (_currentIndex < _selectedQuestions.length - 1) {
       _currentIndex++;
@@ -96,6 +98,7 @@ class QuizViewModel extends ChangeNotifier {
     }
   }
 
+  // NUEVO: Método para retroceder a la pregunta anterior
   void previousQuestion() {
     if (_currentIndex > 0) {
       _currentIndex--;
@@ -103,6 +106,8 @@ class QuizViewModel extends ChangeNotifier {
     }
   }
 
+  // ============ RESPONDER PREGUNTA ============
+  // NUEVO: Método que faltaba en tu código original
   void answerQuestion(Option selectedOption) {
     final questionId = currentQuestion.id;
 
@@ -126,14 +131,7 @@ class QuizViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
-
-
-
-
-
-
+  // ============ CALCULAR RESULTADO (CON ISOLATE) ============
   Future<Map<String, dynamic>> calculateResult() async {
     final receivePort = ReceivePort();
 
@@ -147,6 +145,7 @@ class QuizViewModel extends ChangeNotifier {
 
     return await receivePort.first;
   }
+
   static void _calculateInIsolate(Map<String, dynamic> data) {
     final SendPort sendPort = data['sendPort'];
     final Map<String, int> scores = Map<String, int>.from(data['scores']);
@@ -184,42 +183,33 @@ class QuizViewModel extends ChangeNotifier {
     }
   }
 
+  // ============ GUARDAR RESULTADO ============
   Future<void> saveResult({
     required String userId,
     required Map<String, dynamic> result,
   }) async {
-    // Referencia al documento del usuario
-    final userDocRef = _firestore.collection('quiz_answers').doc(userId);
+    // Creamos el objeto UserQuizResult completo
+    final userResult = UserQuizResult(
+      userId: userId,
+      quizId: 'personality_v1',
+      timestamp: DateTime.now(),
+      selectedQuestionIds: _selectedQuestions.map((q) => q.id).toList(),
+      scores: Map<String, int>.from(_scores),
+      resultCategories: List<String>.from(result['categories']),
+      resultType: result['type'].toString(),
+    );
 
-    // Nuevo resultado a agregar
-    final newResult = {
-      'quizBankId': 'personality_v1',
-      'timestamp': FieldValue.serverTimestamp(), // Mejor que DateTime.now()
-      'selectedQuestionIds': _selectedQuestions.map((q) => q.id).toList(),
-      'scores': _scores,
-      'resultCategory': result['categories'],
-      'resultType': result['type'],
-    };
+    // GUARDADO MAESTRO: Usa el QuizStorageManager que maneja:
+    // 1. SharedPreferences (iconos/categorías para UI rápida)
+    // 2. LRU Cache (en memoria)
+    // 3. Archivo local (persistencia offline)
+    // 4. Firebase (sincronización en la nube, solo si hay internet)
+    await QuizStorageManager.saveResult(userResult);
 
-    // Verificamos si el documento ya existe
-    final docSnapshot = await userDocRef.get();
+  }
 
-    if (docSnapshot.exists) {
-      // ✅ SI EXISTE: Agregamos el nuevo resultado al array 'results'
-      await userDocRef.update({
-        'results': FieldValue.arrayUnion([newResult]),
-        'lastUpdated': FieldValue.serverTimestamp(),
-        'totalQuizzes': FieldValue.increment(1), // Contador de cuántos ha hecho
-      });
-    } else {
-      // ✅ NO EXISTE: Creamos el documento con el primer resultado
-      await userDocRef.set({
-        'userId': userId,
-        'results': [newResult], // Array con el primer resultado
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastUpdated': FieldValue.serverTimestamp(),
-        'totalQuizzes': 1,
-      });
-    }
+  // NUEVO: Obtener el último resultado del usuario
+  Future<UserQuizResult?> getLatestResult(String userId) async {
+    return await QuizStorageManager.getLatestResult(userId);
   }
 }

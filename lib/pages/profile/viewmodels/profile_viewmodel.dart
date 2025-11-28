@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/local_DB_service.dart';
+import '../../../util/quizConstant.dart';
 import '../models/user_model.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -21,6 +22,11 @@ class ProfileViewModel extends ChangeNotifier {
 
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
+
+  List<String> _quizCategories = [];
+
+  List<String> get quizCategories => _quizCategories;
+
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -48,6 +54,8 @@ class ProfileViewModel extends ChangeNotifier {
           throw TimeoutException("Timeout al cargar datos del usuario");
         }),
       ]);
+      await loadQuizCategories();
+
     } catch (e) {
       _error = "There is no network or local data save for this user";
       debugPrint("Error loading user data: $e");
@@ -602,6 +610,12 @@ class ProfileViewModel extends ChangeNotifier {
       return "Ambivert";
     }
   }
+
+  Future<void> loadQuizCategories() async {
+    _quizCategories = await QuizStorageManager.getCategories();
+    notifyListeners();
+  }
+
 
   /// Limpiar error
   void clearError() {
