@@ -1,4 +1,6 @@
 import 'package:app_flutter/main.dart';
+import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
+import 'package:app_flutter/pages/login/views/register.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -35,16 +37,22 @@ class _LoginState extends State<Login> {
     
     _hasRedirected = true;
     
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       
       // Verificar si es primera vez
       if (viewModel.isFirstTimeUser) {
-        // Primera vez: ir a onboarding o bienvenida
-        Navigator.pushReplacementNamed(context, '/register');
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/register',
+          ModalRoute.withName('/start/login'),
+          arguments: viewModel.user!.uid,
+        );
+
+
       } else {
-        // Ya registrado: ir a home
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.of(context).pushReplacementNamed('/home');
+        print('Navigator stack después de ir a home: ${Navigator.of(context).canPop()}');
+
       }
     });
   }

@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:app_flutter/main.dart';
+import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
+import 'package:app_flutter/pages/Quiz/view/quizView.dart';
 import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
+import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
 import 'package:app_flutter/widgets/home_sections_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,14 +13,17 @@ import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/weekly/view/weekly_challenge_view.dart';
 
-import '../../widgets/recommendation_section.dart';
-import '../FreeTime/view/free_time_view.dart';
+import '../../../widgets/recommendation_section.dart';
+import '../Quiz/viewmodel/quizViewModel.dart';
+
 
 class Home extends StatelessWidget {
   const Home({super.key});
+  
 
   @override
   Widget build(BuildContext context) {
+    final AnalyticsService analytics = AnalyticsService();
     return Consumer<ProfileViewModel>(
       builder: (context, profileViewModel, child) {
         final user = FirebaseAuth.instance.currentUser;
@@ -27,15 +35,7 @@ class Home extends StatelessWidget {
         }
 
         final profilePhoto = profileViewModel.currentUser?.profile.photo;
-
-        String profileImagePath;
-        if (profilePhoto != null && profilePhoto.isNotEmpty) {
-          profileImagePath = profilePhoto.startsWith('http')
-              ? profilePhoto
-              : profilePhoto;
-        } else {
-          profileImagePath = 'assets/images/default_profile.png';
-        }
+        final profileImage = getProfileImage(profilePhoto);
 
         return Scaffold(
           backgroundColor: const Color(0xFFFEFAED),
@@ -43,7 +43,7 @@ class Home extends StatelessWidget {
             userName: profileViewModel.currentUser?.profile.name ?? 
                      user.displayName ?? 
                      "User",
-            profileImagePath: profileImagePath,
+            profileImage: profileImage,
             onNotificationTap: () {
               print('Notification tapped');
             },
@@ -91,10 +91,20 @@ class Home extends StatelessWidget {
                                 }
                                 break;
 
-                              case CardType.wishMeLuck:
-                                mainPageState?.selectTab(2);
+                              case CardType.MoodQuiz:
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChangeNotifierProvider(
+                                      create: (_) => QuizViewModel(),
+                                      child: const QuizScreen(),
+                                    ),
+                                  ),
+                                );
                                 break;
+
                               case CardType.map:
+                                analytics.logMapUsed(user.uid);
                                 mainPageState?.selectTab(1, arguments: {'startWithMapView': true});
                                 break;
                             }
@@ -105,7 +115,10 @@ class Home extends StatelessWidget {
 
 
                         // Carga dinámica de recomendaciones con FutureBuilder
-                        RecommendationsSection(),
+                        // Optimización
+                        RepaintBoundary(
+                          child: RecommendationsSection(),
+                        ),
 
 
                         const SizedBox(height: 30),
@@ -121,5 +134,15 @@ class Home extends StatelessWidget {
           
       },
     );
+  }
+
+  ImageProvider getProfileImage(String? photoPath) {
+    if (photoPath == null || photoPath.isEmpty) {
+      return const AssetImage("assets/images/profileimg.png");
+    } else if (photoPath.startsWith('http')) {
+      return NetworkImage(photoPath);
+    } else {
+      return FileImage(File(photoPath));
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:flutter/material.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/comment.dart';
@@ -30,7 +31,7 @@ class _DetailEventState extends State<DetailEvent> {
   @override
   void initState() {
     super.initState();
-    _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+    _commentsFuture = _commentService.loadComments(widget.event.id);
     print(_commentsFuture);
     _loadCheckIn();
   }
@@ -53,7 +54,7 @@ class _DetailEventState extends State<DetailEvent> {
 
   void _refreshComments() {
     setState(() {
-      _commentsFuture = _commentService.getCommentsForEvent(widget.event.id);
+      _commentsFuture = _commentService.loadComments(widget.event.id);
     });
   }
 
@@ -68,9 +69,17 @@ class _DetailEventState extends State<DetailEvent> {
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF6389E2),
-        actions: const [
-          Icon(Icons.notifications_none),
-          SizedBox(width: 16),
+        actions: [IconButton(
+            icon: const Icon(Icons.description, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NewsView(),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -101,6 +110,7 @@ class _DetailEventState extends State<DetailEvent> {
                           
                         ),
                       );
+                      _refreshComments();
                     },
                     child: const Text("Make a Comment"),
                   ),
@@ -134,7 +144,7 @@ class _DetailEventState extends State<DetailEvent> {
             ),
             const SizedBox(height: 12),
 
-            // 🔸 FutureBuilder de comentarios
+            //  FutureBuilder de comentarios
             FutureBuilder<List<Comment>>(
               future: _commentsFuture,
               builder: (context, snapshot) {
@@ -176,7 +186,7 @@ class _DetailEventState extends State<DetailEvent> {
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
-                  Image.asset("assets/images/event.jpg", height: 180),
+                  Image.asset("assets/images/events/event.jpg", height: 180),
             ),
           ),
           Padding(
@@ -301,7 +311,7 @@ class _DetailEventState extends State<DetailEvent> {
 
   Widget _buildCommentCard(Comment comment) {
     final formattedDate =
-        DateFormat('MMM d, yyyy • hh:mm a').format(comment.createdAt);
+        DateFormat('MMM d, yyyy • hh:mm a').format(comment.created);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),

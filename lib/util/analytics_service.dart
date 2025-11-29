@@ -1,5 +1,6 @@
 // lib/util/analytics_service.dart
 import 'package:app_flutter/util/firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 
@@ -53,6 +54,19 @@ class AnalyticsService {
       },
     );
   }
+
+  //Enter the map feature
+  Future<void> logMapUsed(String userId) async {
+    print("Generando evento de mapa=============================================================================================================");
+    await _analytics.logEvent(
+      name: 'map_view_opened',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
+
   // Weekly Challenge specific
   Future<void> logWeeklyChallengeCompleted(String userId, String challengeId) async {
     final now = DateTime.now();
@@ -73,6 +87,17 @@ class AnalyticsService {
       'challenge_id': challengeId,
       'timestamp': now,
     });
+
+    await firestore.collection('user_activities').add(
+      {
+        'user_id': userId,
+        'event_id': challengeId,
+        'time': now,
+        'source': "manual",
+        'type' : "weekly challenge",
+        "with_friends": false,
+      }
+    );
   }
 
 
@@ -82,12 +107,17 @@ class AnalyticsService {
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
 
     final querySnapshot = await firestore
-        .collection('weekly_challenge_completions')
-        .where('user_id', isEqualTo: userId)
-        .where('timestamp', isGreaterThanOrEqualTo: thirtyDaysAgo)
-        .get();
+      .collection('weekly_challenge_completions')
+      .where('user_id', isEqualTo: userId)
+      .get();
 
-    return querySnapshot.docs.length;
+    final filtered = querySnapshot.docs.where((doc) {
+    final ts = (doc['timestamp'] as Timestamp).toDate();
+    return ts.isAfter(thirtyDaysAgo);
+  }).toList();
+
+
+    return filtered.length;
   }
 
   
@@ -136,6 +166,37 @@ class AnalyticsService {
       },
     );
   }
+
+  Future<void> logDirectionsRequested(String eventId, String userId) async {
+    await _analytics.logEvent(
+      name: 'directions_requested',
+      parameters: {
+        'user_id': userId,
+        'event_id': eventId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
+  // Quiz analytics
+  Future<void> logMoodQuizOpened() async {
+    await _analytics.logEvent(
+      name: 'mood_quiz_opened',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
+  Future<void> logMoodQuizCompleted() async {
+    await _analytics.logEvent(
+      name: 'mood_quiz_completed',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
   void activarFirebase() async{
     await _analytics.setAnalyticsCollectionEnabled(true);
   }

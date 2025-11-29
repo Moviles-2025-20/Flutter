@@ -1,10 +1,13 @@
 import 'package:app_flutter/pages/events/view/event_detail_view.dart';
 import 'package:app_flutter/widgets/list_events/events_map_list.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/viewmodel/events_map_viewmodel.dart';
+
+import '../../util/analytics_service.dart';
 
 class EventsMapView extends StatefulWidget {
   final List<Event> events;
@@ -30,12 +33,22 @@ class _EventsMapViewState extends State<EventsMapView> {
     _viewModel.initializeLocation();
   }
 
+
   @override
   void didUpdateWidget(EventsMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.events != widget.events) {
       _viewModel.setEvents(widget.events);
     }
+  }
+
+  Future<void> _retryLoadLocation() async {
+    await _viewModel.initializeLocation();
+  }
+
+  bool _isNoInternetError() {
+    final error = _viewModel.errorMessage?.toLowerCase() ?? '';
+    return error.contains('internet') || error.contains('connection');
   }
 
   
@@ -45,7 +58,7 @@ class _EventsMapViewState extends State<EventsMapView> {
     if (nearbyEvents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No hay eventos cercanos disponibles'),
+          content: Text('There are no events available.'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -66,11 +79,45 @@ class _EventsMapViewState extends State<EventsMapView> {
             MaterialPageRoute(
               builder: (context) => DetailEvent(event: event),
             ),
+
           );
         },
       ),
     );
   }
+
+  void _showDirectionsButton(Event event) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(event.name,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _viewModel.requestDirections(event, "user123"); // aquí log + abrir Google Maps
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.directions),
+                label: const Text("Cómo llegar"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink.shade400,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
 
   @override
@@ -79,11 +126,57 @@ class _EventsMapViewState extends State<EventsMapView> {
       value: _viewModel,
       child: Consumer<EventsMapViewModel>(
         builder: (context, viewModel, child) {
+
+        if (viewModel.errorMessage != null) {
+          return Container(
+            color: Colors.transparent,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isNoInternetError() ? Icons.wifi_off : Icons.error_outline,
+                      color: Colors.red.shade700,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      viewModel.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: _retryLoadLocation,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Retry"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.red.shade400,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+
           return Scaffold(
             body: Stack(
               children: [
-                // Map
-                GoogleMap(
+                RepaintBoundary(
+                child: GoogleMap(
                   initialCameraPosition: CameraPosition(
                     target: viewModel.mapCenter,
                     zoom: 12,
@@ -95,57 +188,60 @@ class _EventsMapViewState extends State<EventsMapView> {
                   myLocationButtonEnabled: true,
                   myLocationEnabled: true,
                 ),
+                ),
                 
                 // Loading indicator
                 if (viewModel.isLoading)
                   Container(
                     color: Colors.black26,
                     child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                
-                // Error message
-                if (viewModel.errorMessage != null)
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    right: 16,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                viewModel.errorMessage!,
-                                style: const TextStyle(color: Colors.red),
+                      child: Card(
+                        margin: EdgeInsets.all(24),
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                'Loading location...',
+                                style: TextStyle(fontSize: 16),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                
+              ),
               ],
             ),
             // Floating Action Button
-            floatingActionButton: viewModel.userPosition != null
+            floatingActionButton: viewModel.selectedEvent != null
                 ? FloatingActionButton.extended(
-                    onPressed: _showNearbyEventsBottomSheet,
-                    icon: const Icon(Icons.near_me, color: Colors.white),
-                    label: const Text('Eventos cercanos', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    backgroundColor: Colors.pink.shade400,
-                  )
-                : null,
+              onPressed: () {
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                if (userId != null) {
+                  _viewModel.requestDirections(viewModel.selectedEvent!, userId);
+                  _viewModel.clearSelectedEvent();
+                } else {
+                  print("No hay usuario autenticado");
+                }
+              },
+              icon: const Icon(Icons.directions, color: Colors.white),
+              label: const Text("Cómo llegar", style: TextStyle(fontSize: 16, color: Colors.white)),
+              backgroundColor: Colors.pink.shade400,
+            )
+                : (viewModel.userPosition != null
+                ? FloatingActionButton.extended(
+              onPressed: _showNearbyEventsBottomSheet,
+              icon: const Icon(Icons.near_me, color: Colors.white),
+              label: const Text('Eventos cercanos',
+                  style: TextStyle(fontSize: 16, color: Colors.white)),
+              backgroundColor: Colors.pink.shade400,
+            )
+                : null),
             floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           );
         },

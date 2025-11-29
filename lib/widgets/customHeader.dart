@@ -1,15 +1,19 @@
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:flutter/material.dart';
+
+import '../pages/notification.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
-  final String profileImagePath;
   final VoidCallback onNotificationTap;
   final Function(String) onSearchSubmitted;
+  final ImageProvider profileImage;
+
 
   const CustomHeader({
     Key? key,
     required this.userName,
-    required this.profileImagePath,
+    required this.profileImage,
     required this.onNotificationTap,
     required this.onSearchSubmitted,
   }) : super(key: key);
@@ -36,10 +40,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _ProfileSection(
-                    userName: userName,
-                    profileImagePath: profileImagePath,
+                    Expanded(child: _ProfileSection(
+                      userName: userName,
+                      profileImage: profileImage,
+                    ),
                   ),
+                  
                   _NotificationButton(onTap: onNotificationTap),
                 ],
               ),
@@ -57,11 +63,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
 
 class _ProfileSection extends StatelessWidget {
   final String userName;
-  final String profileImagePath;
+  final ImageProvider profileImage;
+
 
   const _ProfileSection({
     required this.userName,
-    required this.profileImagePath,
+    required this.profileImage,
   });
 
   @override
@@ -70,30 +77,30 @@ class _ProfileSection extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 25,
-          backgroundImage: profileImagePath.isNotEmpty
-              ? NetworkImage(profileImagePath)
-              : AssetImage('assets/images/default_profile.png') as ImageProvider,
-        ),
+          backgroundImage: profileImage),
         SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Welcome',
+                softWrap: true,
+                style: TextStyle(color: Colors.white, fontSize: 14),
               ),
-            ),
-            Text(
-              'Hi, $userName!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+              Text(
+                'Hi, $userName!',
+                maxLines: 1,  
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -108,13 +115,14 @@ class _NotificationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(
-        Icons.notifications_outlined,
-        color: Colors.white,
-        size: 35,
-      ),
+      icon: const Icon(Icons.description, color: Colors.white),
       onPressed: () {
-        Navigator.pushNamed(context, '/notifications');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NewsView(),
+          ),
+        );
       },
     );
   }

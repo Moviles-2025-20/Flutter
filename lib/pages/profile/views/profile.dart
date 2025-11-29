@@ -1,14 +1,19 @@
+import 'package:app_flutter/pages/badges/view/badges_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_stats_view.dart';
 import 'package:app_flutter/pages/login/views/login.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:app_flutter/util/quizConstant.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+  
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -16,7 +21,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -37,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text("Select from gallery"),
               onTap: () async {
                 final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                if (image != null) await viewModel.updatePhoto(image.path);
+                if (image != null) await viewModel.updatePhotoInstantly(image.path);
                 Navigator.of(context).pop();
               },
             ),
@@ -46,7 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text("Take a photo"),
               onTap: () async {
                 final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-                if (image != null) await viewModel.updatePhoto(image.path);
+                if (image != null) await viewModel.updatePhotoInstantly(image.path);
                 Navigator.of(context).pop();
               },
             ),
@@ -86,16 +90,32 @@ class _ProfilePageState extends State<ProfilePage> {
               final name = nameController.text;
               final major = majorController.text;
 
-              if (name.isNotEmpty) {
-                await viewModel.updateName(name);
-                await viewModel.updateMajor(major);
-              }
+              try {
+                if (name.isNotEmpty) {
+                  await viewModel.updateName(name);
+                  await viewModel.updateMajor(major);
+                }
 
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profile updated successfully")),
-                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Profile updated successfully")),
+                  );
+                }
+              } catch (e) {
+                //  Captura la excepción lanzada con throw StateError
+                if (context.mounted) {
+                  Navigator.pop(context); // Cierra el diálogo incluso si hay error
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        viewModel.error ?? "Error updating profile",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
               }
             },
             child: const Text("Save"),
@@ -158,10 +178,36 @@ class _ProfilePageState extends State<ProfilePage> {
               TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
                 onPressed: () async {
-                  for (var category in selected) {
-                    await viewModel.addFavoriteCategory(category);
+                  try {
+                    for (var category in selected) {
+                      await viewModel.addFavoriteCategory(category);
+                    }
+
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Categories added successfully")),
+                      );
+                    }
+
+                  } on StateError catch (e) {
+                    //  Captura el error lanzado en el ViewModel (sin conexión, etc.)
+                    if (context.mounted) {
+                      Navigator.pop(context); // Cierra el diálogo
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                    }
+
+                  } catch (e) {
+                    // Cualquier otro error inesperado
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Error adding categories")),
+                      );
+                    }
                   }
-                  if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text("Add"),
               ),
@@ -286,11 +332,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: profile.photo != null && profile.photo!.isNotEmpty
-                              ? (profile.photo!.startsWith('http')
-                              ? NetworkImage(profile.photo!)
-                              : FileImage(File(profile.photo!)) as ImageProvider)
-                              : const AssetImage("assets/images/profileimg.png") as ImageProvider,
+                          backgroundImage:getProfileImage(profile.photo),
                         ),
                         Positioned(
                           bottom: 0,
@@ -454,13 +496,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 const Divider(color: Colors.grey, thickness: 1),
                 const SizedBox(height: 30),
 
+                const ProfileQuizCategory(),
+
+                const SizedBox(height: 30),
+
                 // ---------------------- Botones ----------------------
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(234, 119, 134, 148), minimumSize: const Size(double.infinity, 40)),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const wishMeLuckStatsView())),
-                  child: const Text("Results of the weekly challenge", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
-                const SizedBox(height: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
                   onPressed: () => _showEditProfileDialog(context, profileViewModel),
@@ -468,16 +508,42 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
+                  onPressed: (){ Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BadgeView(userId: user.uid,),
+                                    ),
+                                  );},
+                  child: const Text("Check your Badges", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFED6275), minimumSize: const Size(double.infinity, 40)),
                   onPressed: authViewModel.isLoading
                       ? null
                       : () async {
-                    await authViewModel.logout();
+                    final connectivity = await Connectivity().checkConnectivity();
+                    if (connectivity == ConnectivityResult.none) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This action cannot be performed because there is no internet."),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    await authViewModel.logout(context);
+
                     if (!mounted) return;
                     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
                       '/start/login',
                           (route) => false,
                     );
+
+
                   },
 
                   child: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
@@ -485,8 +551,25 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA9892), minimumSize: const Size(double.infinity, 40)),
-                  onPressed: () => _showDeleteAccountDialog(context, profileViewModel, authViewModel),
-                  child: const Text("Delete your account", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  onPressed: () async {
+                    final connectivity = await Connectivity().checkConnectivity();
+                    if (connectivity == ConnectivityResult.none) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This action cannot be performed because there is no internet."),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    _showDeleteAccountDialog(context, profileViewModel, authViewModel);
+                  },
+                  child: const Text(
+                    "Delete your account",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -507,8 +590,34 @@ class _ProfilePageState extends State<ProfilePage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              await viewModel.removeFavoriteCategory(category);
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await viewModel.removeFavoriteCategory(category);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("'$category' removed successfully")),
+                  );
+                }
+
+              } on StateError catch (e) {
+                // Maneja el error lanzado en el ViewModel (por ejemplo: sin conexión)
+                if (context.mounted) {
+                  Navigator.pop(context); // Cierra el diálogo
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.message)),
+                  );
+                }
+
+              } catch (e) {
+                // Otros errores no controlados
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Error removing category")),
+                  );
+                }
+              }
             },
             child: const Text("Remove", style: TextStyle(color: Colors.white)),
           ),
@@ -516,6 +625,176 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
+  ImageProvider getProfileImage(String? photoPath) {
+    if (photoPath == null || photoPath.isEmpty) {
+      return const AssetImage("assets/images/profileimg.png");
+    } else if (photoPath.startsWith('http')) {
+      return NetworkImage(photoPath);
+    } else {
+      return FileImage(File(photoPath));
+    }
+  }
 }
+
+class ProfileQuizCategory extends StatelessWidget {
+  const ProfileQuizCategory({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ProfileViewModel>(
+      builder: (context, vm, _) {
+        final categories = vm.quizCategories;
+        if (categories.isEmpty) return const SizedBox.shrink();
+
+        final isMixed = categories.length > 1;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12), // ⬇ antes 14
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _getGradientColors(categories, isMixed),
+            ),
+            borderRadius: BorderRadius.circular(14), // ⬇ antes 16
+            boxShadow: [
+              BoxShadow(
+                color: _getPrimaryColor(categories).withOpacity(0.22),
+                blurRadius: 8, // ⬇ antes 10
+                offset: const Offset(0, 4), // ⬇ antes (0,5)
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _buildIconsSection(categories, isMixed),
+              const SizedBox(height: 8), // ⬇ antes 10
+
+              Text(
+                'Mood Quiz Result',
+                style: TextStyle(
+                  fontSize: 10.5, // ⬇ antes 11
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                  letterSpacing: 1.05,
+                ),
+              ),
+              const SizedBox(height: 5),
+
+              Text(
+                isMixed
+                    ? categories
+                    .map((c) => QuizConstants.getCategoryName(c))
+                    .join(' & ')
+                    : QuizConstants.getCategoryName(categories.first),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16, // ⬇ antes 18
+                  fontWeight: FontWeight.bold,
+                  color: _getPrimaryColor(categories),
+                ),
+              ),
+
+              if (isMixed) ...[
+                const SizedBox(height: 5),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    'Mixed Personality',
+                    style: TextStyle(
+                      fontSize: 9.5, // ⬇ antes 10
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------- ICONOS ----------
+  Widget _buildIconsSection(List<String> categories, bool isMixed) {
+    if (!isMixed) {
+      return Container(
+        padding: const EdgeInsets.all(12), // ⬇ antes 14
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          QuizConstants.categoryIcons[categories.first],
+          size: 36, // ⬇ antes 42
+          color: QuizConstants.categoryColors[categories.first],
+        ),
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: categories.take(2).map((cat) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Container(
+              padding: const EdgeInsets.all(10), // ⬇ antes 12
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.4),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                QuizConstants.categoryIcons[cat],
+                size: 26, // ⬇ antes 30
+                color: QuizConstants.categoryColors[cat],
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+  }
+
+  // ---------- COLORES ----------
+  List<Color> _getGradientColors(List<String> categories, bool isMixed) {
+    if (!isMixed) {
+      final baseColor = QuizConstants.categoryColors[categories.first]!;
+      return [
+        baseColor.withOpacity(0.2),
+        baseColor.withOpacity(0.05),
+      ];
+    }
+    return [
+      QuizConstants.categoryColors[categories[0]]!.withOpacity(0.15),
+      QuizConstants.categoryColors[categories[1]]!.withOpacity(0.15),
+    ];
+  }
+
+  Color _getPrimaryColor(List<String> categories) {
+    return QuizConstants.categoryColors[categories.first] ?? Colors.blue;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
