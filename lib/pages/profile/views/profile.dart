@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/badges/view/badges_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_stats_view.dart';
@@ -10,6 +11,7 @@ import 'dart:io';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+  
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -17,7 +19,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -498,6 +499,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
                   onPressed: () => _showEditProfileDialog(context, profileViewModel),
                   child: const Text("Change your profile information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6389E2), minimumSize: const Size(double.infinity, 40)),
+                  onPressed: (){ Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BadgeView(userId: user.uid,),
+                                    ),
+                                  );},
+                  child: const Text("Check your Badges", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
