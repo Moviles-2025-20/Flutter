@@ -115,7 +115,10 @@ class Home extends StatelessWidget {
 
 
                         // Carga dinámica de recomendaciones con FutureBuilder
-                        RecommendationsSection(),
+                        // Optimización
+                        RepaintBoundary(
+                          child: RecommendationsSection(),
+                        ),
 
 
                         const SizedBox(height: 30),

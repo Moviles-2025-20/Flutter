@@ -175,8 +175,8 @@ class _EventsMapViewState extends State<EventsMapView> {
           return Scaffold(
             body: Stack(
               children: [
-                // Map
-                GoogleMap(
+                RepaintBoundary(
+                child: GoogleMap(
                   initialCameraPosition: CameraPosition(
                     target: viewModel.mapCenter,
                     zoom: 12,
@@ -188,8 +188,7 @@ class _EventsMapViewState extends State<EventsMapView> {
                   myLocationButtonEnabled: true,
                   myLocationEnabled: true,
                 ),
-
-
+                ),
                 
                 // Loading indicator
                 if (viewModel.isLoading)
@@ -214,10 +213,8 @@ class _EventsMapViewState extends State<EventsMapView> {
                         ),
                       ),
                     ),
-                  ),
                 
-                // Error message with retry button
-               
+              ),
               ],
             ),
             // Floating Action Button
