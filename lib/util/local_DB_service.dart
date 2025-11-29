@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/badges/model/badge.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -104,12 +105,28 @@ class LocalUserService {
     print("✓ Tabla 'events' creada");
 
     await db.execute('''
-  CREATE TABLE IF NOT EXISTS quiz_questions (
-    id TEXT PRIMARY KEY,
-    text TEXT NOT NULL,
-    options TEXT NOT NULL
-  )
-''');
+      CREATE TABLE IF NOT EXISTS badges (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        description TEXT,
+        icon TEXT,
+        rarity TEXT,
+        criteria_type TEXT,
+        criteria_value INTEGER, 
+        is_secret INTEGER,   -- Boolean como 0 o 1
+        created_at TEXT,
+        updated_at TEXT
+      )
+    ''');
+    print("✓ Tabla 'badges' creada");
+    
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS quiz_questions (
+        id TEXT PRIMARY KEY,
+        text TEXT NOT NULL,
+        options TEXT NOT NULL
+    )
+  ''');
     print("✓ Tabla 'quiz_questions' creada");
     
     print("✓ Todas las tablas creadas correctamente");
@@ -446,4 +463,54 @@ class LocalUserService {
       print('✗ Error limpiando preguntas: $e');
     }
   }
+
+
+//=================== Metodos para Badges =============================
+
+  // Insertar lista de medallas (catálogo)
+  Future<void> insertBadges(List<Badge_Medal> badges) async {
+    final db = await database;
+    final batch = db.batch();
+    
+    for (final badge in badges) {
+      batch.insert(
+        'badges',
+        {
+          'id': badge.id,
+          'name': badge.name,
+          'description': badge.description,
+          'icon': badge.icon,
+          'rarity': badge.rarity,
+          'criteria_type': badge.criteriaType,
+          'criteria_value': badge.criteriaValue, // O jsonEncode si es complejo
+          'is_secret': badge.isSecret ? 1 : 0,
+          'created_at': badge.createdAt.toIso8601String(),
+          'updated_at': badge.updatedAt.toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+  // Obtener todas las medallas
+  Future<List<Badge_Medal>> getAllBadges() async {
+    final db = await database;
+    final result = await db.query('badges');
+    
+    return result.map((row) {
+      return Badge_Medal(
+        id: row['id'] as String,
+        name: row['name'] as String,
+        description: row['description'] as String,
+        icon: row['icon'] as String,
+        rarity: row['rarity'] as String,
+        criteriaType: row['criteria_type'] as String,
+        criteriaValue: row['criteria_value'],// Deberás parsearlo si era JSON
+        isSecret: (row['is_secret'] as int) == 1,
+        createdAt: DateTime.parse(row['created_at'] as String),
+        updatedAt: DateTime.parse(row['updated_at'] as String),
+      );
+    }).toList();
+  }
+
 }
