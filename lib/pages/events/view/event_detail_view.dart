@@ -1,3 +1,4 @@
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:flutter/material.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/comment.dart';
@@ -68,9 +69,17 @@ class _DetailEventState extends State<DetailEvent> {
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF6389E2),
-        actions: const [
-          Icon(Icons.notifications_none),
-          SizedBox(width: 16),
+        actions: [IconButton(
+            icon: const Icon(Icons.description, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NewsView(),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
