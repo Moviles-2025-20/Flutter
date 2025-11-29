@@ -1,7 +1,10 @@
 
+import 'dart:async';
+
 import 'package:app_flutter/pages/badges/model/badge.dart';
 import 'package:app_flutter/pages/badges/model/user_badge.dart';
 import 'package:app_flutter/util/badges_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -34,72 +37,180 @@ class BadgeMedalViewModel extends ChangeNotifier {
   late final BadgeRepository badgeRepository;
   final _prefsService = BadgePreferences();
   final _fileStorage = UserBadgeFileStorage();
- 
+
+  bool isOfflineError = false; 
+  StreamSubscription? _badgesSubscription;
+  StreamSubscription? _connectivitySubscription;
+  bool noBadgesAvailable = false;
+  bool _isRetryingConnection = false;
 
   BadgeMedalViewModel({required this.userId, required this.badgeRepository});
 
-  //Badges Base
   final List<Badge_Medal> defaultBadges = [
-    asistenteEvento,
+    Badge_Medal(
+      id: "asistente_evento",
+      name: "Asistente de Evento",
+      description: "Participaste en tu primer evento del campus.",
+      icon: "icons/event_attendee.png",
+      rarity: "common",
+      criteriaType: "events_attended",
+      criteriaValue: 1,
+      isSecret: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
   ];
 
   Future<void> crearBadgesIniciales() async {
-    debugPrint("Se estan creando las badges");
+    debugPrint("Creando badges iniciales");
     await badgeRepository.createBadges(defaultBadges);
   }
 
-
-  /// Cargar todas las medallas disponibles
   Future<void> loadAllBadgeMedals() async {
     isLoading = true;
     errorMessage = null;
+    noBadgesAvailable = false;
+    isOfflineError = false;
     notifyListeners();
     
     try {
+      debugPrint("Cargando catálogo de badges...");
       allBadgeMedals = await badgeRepository.getAllBadges();
+      
+      if (allBadgeMedals.isEmpty) {
+        debugPrint("No hay badges en el sistema");
+        noBadgesAvailable = true;
+        errorMessage = "No hay medallas disponibles en el sistema.";
+        isLoading = false; // ⚡ IMPORTANTE
+        notifyListeners();
+        return;
+      }
+      
+      debugPrint("Catálogo cargado: ${allBadgeMedals.length} badges");
       await loadUserBadges();
+      
     } catch (e) {
+      debugPrint("Error al cargar catálogo: $e");
       errorMessage = 'Error al cargar medallas: $e';
-    } finally {
-      isLoading = false;
+      isLoading = false; // ⚡ IMPORTANTE
       notifyListeners();
     }
   }
 
-  /// Cargar medallas del usuario
   Future<void> loadUserBadges() async {
     try {
-
+      debugPrint("Cargando badges del usuario...");
+      isOfflineError = false;
+      isLoading = true;
+      notifyListeners();
+      
+      // Suscribirse a actualizaciones de fondo
+      _badgesSubscription?.cancel();
+      _badgesSubscription = badgeRepository.badgesUpdateStream.listen((newBadges) {
+        debugPrint("Actualización en segundo plano recibida");
+        userBadges = newBadges;
+        unlockedBadgeMedals = userBadges.where((b) => b.isUnlocked).toList();
+        _updateStatsPrefs();
+        notifyListeners();
+      });
+      
       userBadges = await badgeRepository.getUserBadges(userId);
-
-      if (userBadges.isEmpty) {
-        debugPrint('UserBadges vacío, inicializando por primera vez...');
-        
+      debugPrint("Badges del usuario cargadas: ${userBadges.length}");
+      
+      // Si es la primera vez
+      if (userBadges.isEmpty && allBadgeMedals.isNotEmpty) {
+        debugPrint(" Primera vez: inicializando badges del usuario...");
         final badgeIds = allBadgeMedals.map((badge) => badge.id).toList();
         await badgeRepository.initializeUserBadges(userId, badgeIds);
-        
         userBadges = await badgeRepository.getUserBadges(userId);
-        debugPrint('UserBadges inicializados: ${userBadges.length}');
+        debugPrint(" UserBadges inicializados: ${userBadges.length}");
       }
-
+      
       unlockedBadgeMedals = userBadges.where((b) => b.isUnlocked).toList();
-      _updateStatsPrefs(); // Actualizar SharedPreferences
+      debugPrint(" Badges desbloqueadas: ${unlockedBadgeMedals.length}");
+      
+      await _updateStatsPrefs();
+      
+
+      isLoading = false;
+      errorMessage = null;
+      isOfflineError = false;
       notifyListeners();
+      
+    } on NoInternetException catch (e) {
+      debugPrint(" Sin internet y sin caché: $e");
+      isOfflineError = true;
+      isLoading = false; // ⚡ IMPORTANTE: Dejar de cargar
+      errorMessage = "Sin conexión. Se volverá a intentar automáticamente.";
+      notifyListeners();
+      
+      // Auto-reconectar
+      _listenForConnectionRestored();
+      
     } catch (e) {
-      errorMessage = 'Error al cargar medallas del usuario: $e';
+      debugPrint(" Error general: $e");
+      errorMessage = 'Error al cargar medallas: $e';
+      isLoading = false; // ⚡ IMPORTANTE
+      isOfflineError = false;
       notifyListeners();
     }
   }
 
-  // Actualizar los datos de cantidad de badges
+  void _listenForConnectionRestored() {
+    debugPrint(" Escuchando cambios de conectividad...");
+    _connectivitySubscription?.cancel();
+    
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
+      if (!isOfflineError || _isRetryingConnection) {
+        debugPrint("⏭ Ignorando cambio (no offline o ya reintentando)");
+        return;
+      }
+      
+      if (result == ConnectivityResult.none) {
+        debugPrint(" Aún sin conexión");
+        return;
+      }
+      
+      debugPrint(" Cambio de conexión detectado a: $result");
+      
+      _isRetryingConnection = true;
+      isLoading = true; // ⚡ Mostrar loading durante reconexión
+      errorMessage = "Reconectando...";
+      notifyListeners();
+      
+      // Esperar un poco para que la conexión se estabilice
+      await Future.delayed(const Duration(seconds: 1));
+      
+      try {
+        final hasRealInternet = await badgeRepository.checkRealConnection();
+        
+        if (hasRealInternet) {
+          debugPrint(" Conexión confirmada. Reintentando carga...");
+          await loadUserBadges(); // Esto ya maneja isLoading
+        } else {
+          debugPrint(" Sin acceso real a internet.");
+          errorMessage = "Conectado pero sin acceso a internet";
+          isLoading = false; // ⚡ IMPORTANTE
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint(" Error al reintentar: $e");
+        errorMessage = "Error al reconectar: $e";
+        isLoading = false; // ⚡ IMPORTANTE
+        notifyListeners();
+      } finally {
+        _isRetryingConnection = false;
+      }
+    });
+  }
+
   Future<void> _updateStatsPrefs() async {
     final int totalBadges = allBadgeMedals.length;
     final int unlockedCount = userBadges.where((ub) => ub.isUnlocked).length;
     await _prefsService.saveBadgeStats(totalBadges, unlockedCount);
-    debugPrint("Stats actualizados en Prefs: $unlockedCount / $totalBadges");
+    debugPrint(" Stats actualizados: $unlockedCount / $totalBadges");
   }
 
-  /// Obtener información de una medalla específica
   Badge_Medal? getBadgeMedalById(String badgeMedalId) {
     try {
       return allBadgeMedals.firstWhere((b) => b.id == badgeMedalId);
@@ -108,7 +219,6 @@ class BadgeMedalViewModel extends ChangeNotifier {
     }
   }
 
-  /// Obtener progreso del usuario en una medalla
   UserBadge? getUserBadgeProgress(String badgeMedalId) {
     try {
       return userBadges.firstWhere((ub) => ub.badgeId == badgeMedalId);
@@ -117,14 +227,12 @@ class BadgeMedalViewModel extends ChangeNotifier {
     }
   }
 
-  /// Actualizar progreso de una medalla
   Future<void> updateBadgeMedalProgress(
     String badgeMedalId,
     int newProgress, {
     List<String>? criteria,
   }) async {
     try {
-
       UserBadge? userBadge = getUserBadgeProgress(badgeMedalId);
       if (userBadge == null) return;
 
@@ -133,7 +241,6 @@ class BadgeMedalViewModel extends ChangeNotifier {
 
       bool shouldUnlock = false;
 
-      // Validar criterios según el tipo
       switch (badgeMedal.criteriaType) {
         case 'tasks_completed':
           shouldUnlock = newProgress >= (badgeMedal.criteriaValue as int);
@@ -152,7 +259,6 @@ class BadgeMedalViewModel extends ChangeNotifier {
           break;
       }
 
-      // Actualizar UserBadge
       final updatedUserBadge = UserBadge(
         id: userBadge.id,
         userId: userBadge.userId,
@@ -162,10 +268,8 @@ class BadgeMedalViewModel extends ChangeNotifier {
         earnedAt: shouldUnlock ? DateTime.now() : userBadge.earnedAt,
       );
 
-      // Guardar en Firestore
       await badgeRepository.updateUserBadge(updatedUserBadge);
 
-      // Actualizar lista local
       final index = userBadges.indexWhere((ub) => ub.badgeId == badgeMedalId);
       if (index != -1) {
         userBadges[index] = updatedUserBadge;
@@ -174,10 +278,11 @@ class BadgeMedalViewModel extends ChangeNotifier {
           unlockedBadgeMedals.add(updatedUserBadge);
         }
       }
+      
       await _fileStorage.saveUserBadges(userBadges);
-      _updateStatsPrefs();
-
+      await _updateStatsPrefs();
       notifyListeners();
+      
     } catch (e) {
       errorMessage = 'Error actualizando progreso: $e';
       notifyListeners();

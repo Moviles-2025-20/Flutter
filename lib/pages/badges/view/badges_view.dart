@@ -56,18 +56,157 @@ class _BadgeViewState extends State<BadgeView> {
       body: ListenableBuilder(
         listenable: _viewModel,
         builder: (context, _) {
-          if (_viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                 // 1️⃣ LOADING (pero no si es error offline)
+        if (_viewModel.isLoading && !_viewModel.isOfflineError) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  'Cargando medallas...',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
 
-          if (_viewModel.errorMessage != null) {
-            return Center(
-              child: Text(
-                _viewModel.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+        // 2️⃣ ERROR: SIN INTERNET Y SIN DATOS
+        if (_viewModel.isOfflineError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.wifi_off, size: 80, color: Colors.red[400]),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Sin conexión a internet',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _viewModel.errorMessage ?? 'Intentando reconectar automáticamente...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_viewModel.isLoading)
+                    const Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 12),
+                        Text(
+                          'Reconectando...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    ElevatedButton.icon(
+                      onPressed: () => _viewModel.loadUserBadges(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6389E2),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                ],
               ),
-            );
-          }
+            ),
+          );
+        }
+
+        // 3️⃣ ERROR: NO HAY BADGES EN EL SISTEMA
+        if (_viewModel.noBadgesAvailable) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 80, color: Colors.orange[400]),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'No hay medallas disponibles',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'El sistema aún no tiene medallas configuradas.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _viewModel.loadAllBadgeMedals(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6389E2),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        
+        // 4️⃣ ERROR GENÉRICO (Otros errores)
+        if (_viewModel.errorMessage != null && !_viewModel.isOfflineError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 80, color: Colors.red[300]),
+                  const SizedBox(height: 24),
+                  Text(
+                    _viewModel.errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _viewModel.loadAllBadgeMedals(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6389E2),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
           return SingleChildScrollView(
             child: Padding(
