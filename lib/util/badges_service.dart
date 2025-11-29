@@ -1,7 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:app_flutter/pages/badges/model/badge.dart';
 import 'package:app_flutter/pages/badges/model/user_badge.dart';
+import 'package:app_flutter/util/badges_cache.dart';
 import 'package:app_flutter/util/firebase_service.dart';
+import 'package:app_flutter/util/local_DB_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ============= ABSTRACT REPOSITORY =============
 
@@ -21,21 +29,49 @@ abstract class IBadgeRepository {
 
 class BadgeRepository implements IBadgeRepository {
   final FirebaseFirestore _firestore = FirebaseService.firestore;
+  final LocalUserService _localService = LocalUserService(); 
+   final _fileStorage = UserBadgeFileStorage();
 
   static const String _badgesCollection = 'badges';
   static const String _userBadgesCollection = 'user_badges';
+  final _memoryCache = UserBadgesLruCache(capacity: 6);
 
 
   @override
   Future<List<Badge_Medal>> getAllBadges() async {
     try {
+
+      try {
+        // Intenta leer del caché interno de Firebase primero
+        final snapshot = await _firestore
+            .collection('badges_definitions')
+            .get(const GetOptions(source: Source.cache)); //Con source se indica que cache
+        if (snapshot.docs.isNotEmpty) {
+          debugPrint("Firebase Cache HIT: Retornando catálogo local");
+          return snapshot.docs.map((d) => Badge_Medal.fromMap(d.data())).toList();
+        }
+      } catch (e) {
+        // Si falla (cache vacío), ignoramos y vamos a local storage
+      }
+
+      final localBadges = await _localService.getAllBadges();
+      
+      if (localBadges.isNotEmpty) {
+        debugPrint("Se usaron las Badges de local Storage");
+        return localBadges;
+      }
+
       final snapshot = await _firestore
           .collection(_badgesCollection)
           .get();
 
-      return snapshot.docs
+      final remoteBadges = snapshot.docs
           .map((doc) => Badge_Medal.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
+
+      await _localService.insertBadges(remoteBadges);
+      return remoteBadges;
+
     } catch (e) {
       throw Exception('Error al cargar medallas: $e');
     }
@@ -45,16 +81,44 @@ class BadgeRepository implements IBadgeRepository {
   @override
   Future<List<UserBadge>> getUserBadges(String userId) async {
     try {
+
+      final cachedBadges = _memoryCache.get(userId);
+      if (cachedBadges != null) {
+        debugPrint("Cache HIT (RAM): Retornando badges desde memoria");
+        return cachedBadges;
+      }
+      debugPrint("Cache MISS (RAM): Buscando en disco...");
+
+
+      final localUserBadges = await _fileStorage.getUserBadges();
+      if (localUserBadges.isNotEmpty) {
+        debugPrint("Disk HIT: Retornando badges desde archivo local");
+        
+        // IMPORTANTE: Subir a cache para la próxima
+        _memoryCache.put(userId, localUserBadges);
+        
+        return localUserBadges;
+      }
+
+
+      debugPrint("Disk MISS: Descargando de Firebase...");
       final snapshot = await _firestore
           .collection(_userBadgesCollection)
           .where('userId', isEqualTo: userId)
           .get();
-
-      return snapshot.docs
+      final remoteBadges = snapshot.docs
           .map((doc) => UserBadge.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
+      // Si encontramos datos, guardamos en TODAS las capas de caché
+      if (remoteBadges.isNotEmpty) {
+        await _fileStorage.saveUserBadges(remoteBadges); 
+        _memoryCache.put(userId, remoteBadges);         
+      }
+      return remoteBadges;
     } catch (e) {
-      throw Exception('Error al cargar medallas del usuario: $e');
+      debugPrint('Error al cargar medallas del usuario: $e');
+      // En caso de error, retornamos lista vacía para no romper la UI
+      return [];
     }
   }
 
@@ -149,7 +213,7 @@ class BadgeRepository implements IBadgeRepository {
         try {
           await updateUserBadge(userBadge);
         } catch (e) {
-          print('Error sincronizando medalla ${userBadge.id}: $e');
+          debugPrint('Error sincronizando medalla ${userBadge.id}: $e');
         }
       }
     } catch (e) {
@@ -186,7 +250,6 @@ class BadgeRepository implements IBadgeRepository {
   ) async {
     try {
       final batch = _firestore.batch();
-      final timestamp = DateTime.now();
 
       for (final badgeId in badgeIds) {
         final userBadge = UserBadge(
@@ -269,6 +332,57 @@ class BadgeRepository implements IBadgeRepository {
 }
 
 // ============= LOCAL CACHE IMPLEMENTATION (OFFLINE) =============
+
+//=== Shared Preferences====
+class BadgePreferences {
+  
+  // Guardar contadores
+  Future<void> saveBadgeStats(int totalBadges, int completedBadges) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('total_badges_count', totalBadges);
+    await prefs.setInt('completed_badges_count', completedBadges);
+  }
+
+  // Leer contadores (retorna una lista o un objeto simple)
+  Future<Map<String, int>> getBadgeStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'total': prefs.getInt('total_badges_count') ?? 0,
+      'completed': prefs.getInt('completed_badges_count') ?? 0,
+    };
+  }
+}
+
+//====== Archivos Locales =============
+class UserBadgeFileStorage {
+  
+  Future<File> _getLocalFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File('${directory.path}/user_badges_detail.json');
+  }
+  // Guardar lista de UserBadges
+  Future<void> saveUserBadges(List<UserBadge> userBadges) async {
+    final file = await _getLocalFile();
+    final String jsonString = jsonEncode(
+      userBadges.map((ub) => ub.toMap()).toList()
+    );
+    await file.writeAsString(jsonString);
+  }
+  // Leer lista de UserBadges
+  Future<List<UserBadge>> getUserBadges() async {
+    try {
+      final file = await _getLocalFile();
+      if (!await file.exists()) return [];
+      final String contents = await file.readAsString();
+      final List<dynamic> jsonList = jsonDecode(contents);
+      return jsonList.map((json) => UserBadge.fromMap(json)).toList();
+    } catch (e) {
+      debugPrint("Error leyendo archivo de badges: $e");
+      return [];
+    }
+  }
+}
+
 
 class LocalBadgeRepository implements IBadgeRepository {
   // Para usar con Hive, Isar o similar

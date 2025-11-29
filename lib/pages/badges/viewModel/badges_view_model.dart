@@ -32,6 +32,8 @@ class BadgeMedalViewModel extends ChangeNotifier {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late final BadgeRepository badgeRepository;
+  final _prefsService = BadgePreferences();
+  final _fileStorage = UserBadgeFileStorage();
  
 
   BadgeMedalViewModel({required this.userId, required this.badgeRepository});
@@ -67,27 +69,34 @@ class BadgeMedalViewModel extends ChangeNotifier {
   /// Cargar medallas del usuario
   Future<void> loadUserBadges() async {
     try {
+
       userBadges = await badgeRepository.getUserBadges(userId);
+
       if (userBadges.isEmpty) {
-        debugPrint('UserBadges vacío, inicializando...');
+        debugPrint('UserBadges vacío, inicializando por primera vez...');
         
-        // Obtener IDs de todas las medallas
         final badgeIds = allBadgeMedals.map((badge) => badge.id).toList();
-        
-        // Inicializar
         await badgeRepository.initializeUserBadges(userId, badgeIds);
         
-        // Cargar nuevamente después de inicializar
         userBadges = await badgeRepository.getUserBadges(userId);
-        
         debugPrint('UserBadges inicializados: ${userBadges.length}');
       }
+
       unlockedBadgeMedals = userBadges.where((b) => b.isUnlocked).toList();
+      _updateStatsPrefs(); // Actualizar SharedPreferences
       notifyListeners();
     } catch (e) {
       errorMessage = 'Error al cargar medallas del usuario: $e';
       notifyListeners();
     }
+  }
+
+  // Actualizar los datos de cantidad de badges
+  Future<void> _updateStatsPrefs() async {
+    final int totalBadges = allBadgeMedals.length;
+    final int unlockedCount = userBadges.where((ub) => ub.isUnlocked).length;
+    await _prefsService.saveBadgeStats(totalBadges, unlockedCount);
+    debugPrint("Stats actualizados en Prefs: $unlockedCount / $totalBadges");
   }
 
   /// Obtener información de una medalla específica
@@ -165,6 +174,8 @@ class BadgeMedalViewModel extends ChangeNotifier {
           unlockedBadgeMedals.add(updatedUserBadge);
         }
       }
+      await _fileStorage.saveUserBadges(userBadges);
+      _updateStatsPrefs();
 
       notifyListeners();
     } catch (e) {

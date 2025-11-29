@@ -436,21 +436,6 @@ class BadgeDetailView extends StatelessWidget {
       return 'Complete the requirements to unlock this badge';
     }
   }
-  // ============= HELPERS =============
-  Color _getBadgeHeaderColor(String rarity) {
-    switch (rarity.toLowerCase()) {
-      case 'common':
-        return const Color(0xFF9E9E9E);
-      case 'rare':
-        return const Color(0xFF2196F3);
-      case 'epic':
-        return const Color(0xFF9C27B0);
-      case 'legendary':
-        return const Color(0xFFFFC107);
-      default:
-        return const Color(0xFF6389E2);
-    }
-  }
 }
 
 extension Capitalize on String {
