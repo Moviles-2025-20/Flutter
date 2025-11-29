@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../util/analytics_service.dart';
 import '../../../util/quizConstant.dart';
 import '../../profile/viewmodels/profile_viewmodel.dart';
 import '../model/optionModel.dart';
@@ -411,6 +412,8 @@ Future<void> _showResults(QuizViewModel vm) async {
   try {
     // PASO 1: Calculamos el resultado con el Isolate
     final result = await vm.calculateResult();
+
+    AnalyticsService().logMoodQuizCompleted();
 
     // Agregamos los scores al resultado para guardarlo completo
     final resultWithScores = {

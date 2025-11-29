@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../util/analytics_service.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/local_DB_service.dart';
 import '../../../util/quizConstant.dart'; // ← NUEVO import
@@ -139,6 +140,8 @@ class QuizViewModel extends ChangeNotifier {
       notifyListeners();
 
       print('✓ Quiz cargado con ${_selectedQuestions.length} preguntas');
+
+      AnalyticsService().logMoodQuizOpened();
 
       // ---------- PASO 3 (AJUSTADO): Guardar en SQLite SOLO si estaba vacío ----------
       if (!hasCachedQuestions) {
