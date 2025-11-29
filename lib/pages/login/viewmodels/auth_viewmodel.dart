@@ -16,6 +16,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import '../../../util/local_DB_service.dart';
+import '../../../util/quizConstant.dart';
 import '../../profile/viewmodels/profile_viewmodel.dart';
 
 
@@ -146,6 +147,8 @@ class AuthViewModel extends ChangeNotifier {
             ? firebaseUser.providerData.first.providerId
             : 'unknown';
         _user = UserModel.fromFirebase(firebaseUser, providerId);
+        await QuizStorageManager.syncPendingQuizToFirebase(_user!.uid);
+
         final registerVM = RegisterViewModel(authViewModel: this);
         final localUserService = LocalUserService();
         final profileVM = ProfileViewModel();
@@ -179,6 +182,8 @@ class AuthViewModel extends ChangeNotifier {
           await localUserService.debugPrintUsers();
           await profileVM.syncUserPhotoIfNeeded(_user!.uid);
           await registerVM.syncPendingUsers();
+          await QuizStorageManager.syncPendingQuizToFirebase(_user!.uid);
+
 
         }
       }

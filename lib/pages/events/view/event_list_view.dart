@@ -58,13 +58,13 @@ class EventsMapListContent extends StatelessWidget {
       ),
       
 
-      body: Column(
+      body: 
+        RepaintBoundary(
+        child: Column(
         children: [
            // Barra de búsqueda
           const SizedBox(height: 8),
-
           SearchBar(viewModel: viewModel),
-
           const SizedBox(height: 8),
 
           Padding(
@@ -120,7 +120,7 @@ class EventsMapListContent extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _showFiltersBottomSheet(BuildContext context, EventsViewModel viewModel) {
