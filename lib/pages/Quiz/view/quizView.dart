@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../util/quizConstant.dart';
+import '../../profile/viewmodels/profile_viewmodel.dart';
 import '../model/optionModel.dart';
 import '../model/questionModel.dart';
 import '../viewmodel/quizViewModel.dart';
@@ -84,9 +85,12 @@ void dispose() {
 @override
 Widget build(BuildContext context) {
   return Scaffold(
+    backgroundColor: const Color(0xFFFDFBF7),
     appBar: AppBar(
-      title: const Text('Quiz de Personalidad'),
+      title: const Text('Mood Quiz',style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
       centerTitle: true,
+      backgroundColor: const Color(0xFF6389E2),
     ),
     body: Consumer<QuizViewModel>(
       builder: (context, vm, _) {
@@ -98,7 +102,7 @@ Widget build(BuildContext context) {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Cargando preguntas...'),
+                Text('Loading questions...'),
               ],
             ),
           );
@@ -107,7 +111,7 @@ Widget build(BuildContext context) {
         // VALIDACIÓN: Si no hay preguntas, mostramos mensaje de error
         if (vm.questions.isEmpty) {
           return const Center(
-            child: Text('No hay preguntas disponibles'),
+            child: Text('No available questions'),
           );
         }
 
@@ -141,44 +145,54 @@ Widget build(BuildContext context) {
   );
 }
 
+
 // ============ INDICADOR DE PROGRESO ============
-Widget _buildProgressIndicator(QuizViewModel vm) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Texto: "Pregunta 2 de 5"
-            Text(
-              'Pregunta ${vm.currentIndex + 1} de ${vm.questions.length}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+  Widget _buildProgressIndicator(QuizViewModel vm) {
+    const primaryBlue = Color(0xFF6389E2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Texto: "Question 2 of 5"
+              Text(
+                'Question ${vm.currentIndex + 1} of ${vm.questions.length}',
+                style: const TextStyle(
+                  fontSize: 18, // ⬆ más grande
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            // Porcentaje: "40%"
-            Text(
-              '${((vm.currentIndex + 1) / vm.questions.length * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+              // Porcentaje
+              Text(
+                '${((vm.currentIndex + 1) / vm.questions.length * 100).toInt()}%',
+                style: const TextStyle(
+                  fontSize: 16, // ⬆ más grande
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 14), // ⬆ más aire
+
+          // Barra de progreso MÁS ALTA
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              minHeight: 10, // ✅ ESTO la hace más gruesa
+              value: (vm.currentIndex + 1) / vm.questions.length,
+              backgroundColor: Colors.grey[200],
+              valueColor:
+              const AlwaysStoppedAnimation<Color>(primaryBlue),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Barra de progreso visual
-        LinearProgressIndicator(
-          value: (vm.currentIndex + 1) / vm.questions.length,
-          backgroundColor: Colors.grey[200],
-          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-        ),
-      ],
-    ),
-  );
-}
+          ),
+        ],
+      ),
+    );
+  }
 
 // ============ PÁGINA DE UNA PREGUNTA ============
 Widget _buildQuestionPage(QuizViewModel vm, Question question) {
@@ -234,17 +248,17 @@ Widget _buildOptionCard({
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         // Si está seleccionada, fondo azul claro, si no, blanco
-        color: isSelected ? Colors.blue.shade50 : Colors.white,
+        color: isSelected ? Color(0xFFEA9892).withOpacity(0.1) : Colors.white,
         border: Border.all(
           // Si está seleccionada, borde azul grueso, si no, gris delgado
-          color: isSelected ? Colors.blue : Colors.grey.shade300,
+          color: isSelected ? Color(0xFFEA9892) : Colors.grey.shade300,
           width: isSelected ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           if (isSelected)
             BoxShadow(
-              color: Colors.blue.withOpacity(0.1),
+              color: Color(0xFFEA9892).withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -259,10 +273,10 @@ Widget _buildOptionCard({
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey,
+                color: isSelected ? Color(0xFFEA9892) : Colors.grey,
                 width: 2,
               ),
-              color: isSelected ? Colors.blue : Colors.transparent,
+              color: isSelected ? Color(0xFFEA9892) : Colors.transparent,
             ),
             child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
           ),
@@ -274,7 +288,7 @@ Widget _buildOptionCard({
               option.text,
               style: TextStyle(
                 fontSize: 16,
-                color: isSelected ? Colors.blue.shade900 : Colors.black87,
+                color: isSelected ? Color(0xFFEA9892) : Colors.black87,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -286,76 +300,110 @@ Widget _buildOptionCard({
 }
 
 // ============ BOTONES DE NAVEGACIÓN ============
-Widget _buildNavigationButtons(QuizViewModel vm) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, -2),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        // BOTÓN ANTERIOR: Solo se muestra si NO es la primera pregunta
-        if (!vm.isFirst)
+  Widget _buildNavigationButtons(QuizViewModel vm) {
+    const primaryBlue = Color(0xFF6389E2);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // -------- BOTÓN ANTERIOR --------
+          if (!vm.isFirst)
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  vm.previousQuestion();
+                  _pageController.animateToPage(
+                    vm.currentIndex,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                icon: const Icon(
+                  Icons.arrow_back,
+                  size: 22,
+                  color: primaryBlue,
+                ),
+                label: const Text(
+                  'Last',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: primaryBlue,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: primaryBlue, width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+
+          if (!vm.isFirst) const SizedBox(width: 12),
+
+          // -------- BOTÓN SIGUIENTE / FINALIZAR --------
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // 1. Actualizamos el índice en el ViewModel
-                vm.previousQuestion();
-                // 2. PAGINADO: Animamos el PageView a la página anterior
-                _pageController.animateToPage(
-                  vm.currentIndex, // Nueva página objetivo
-                  duration: const Duration(milliseconds: 300), // Duración de la animación
-                  curve: Curves.easeInOut, // Tipo de animación suave
-                );
+            child: ElevatedButton.icon(
+              onPressed: vm.currentAnswer == null
+                  ? null
+                  : () {
+                if (vm.isLast) {
+                  _showResults(vm);
+                } else {
+                  vm.nextQuestion();
+                  _pageController.animateToPage(
+                    vm.currentIndex,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
               },
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Anterior'),
+              icon: Icon(
+                vm.isLast ? Icons.check_circle : Icons.arrow_forward,
+                size: 22,
+                color: Colors.white,
+              ),
+              label: Text(
+                vm.isLast ? 'Finish' : 'Next',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: vm.currentAnswer == null
+                    ? Colors.grey.shade300
+                    : primaryBlue,
+                disabledBackgroundColor: Colors.grey.shade300,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: vm.currentAnswer == null ? 0 : 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-        if (!vm.isFirst) const SizedBox(width: 12),
 
-        // BOTÓN SIGUIENTE/FINALIZAR
-        Expanded(
-          child: ElevatedButton.icon(
-            // Se deshabilita si no ha respondido la pregunta actual
-            onPressed: vm.currentAnswer == null
-                ? null
-                : () {
-              if (vm.isLast) {
-                // Si es la última pregunta, mostramos resultados
-                _showResults(vm);
-              } else {
-                // 1. Actualizamos el índice en el ViewModel
-                vm.nextQuestion();
-                // 2. PAGINADO: Animamos el PageView a la siguiente página
-                _pageController.animateToPage(
-                  vm.currentIndex, // Nueva página objetivo
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              }
-            },
-            icon: Icon(vm.isLast ? Icons.check : Icons.arrow_forward),
-            label: Text(vm.isLast ? 'Finalizar' : 'Siguiente'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-// ============ MOSTRAR RESULTADOS ============
+//  MOSTRAR RESULTADOS
 Future<void> _showResults(QuizViewModel vm) async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
@@ -421,7 +469,7 @@ Future<void> _showResults(QuizViewModel vm) async {
 }
 }
 
-// ============ PANTALLA DE RESULTADOS ============
+// PANTALLA DE RESULTADOS
 class QuizResultScreen extends StatelessWidget {
   final Map<String, dynamic> result;
   final Map<String, int> scores;
@@ -439,10 +487,12 @@ class QuizResultScreen extends StatelessWidget {
     final isMixed = categories.length > 1;
 
     return Scaffold(
+        backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
-        title: const Text('Your Result'),
+        title: const Text('Your Result',style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
         centerTitle: true,
-        automaticallyImplyLeading: false, // Quitamos botón de atrás
+        backgroundColor: const Color(0xFF6389E2),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -495,13 +545,14 @@ class QuizResultScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: Color(0xFF6389E2)),
               ),
               child: Text(
                 isMixed
                     ? QuizConstants.getMixedDescription(categories)
                     : QuizConstants.categoryDescriptions[categories.first] ?? '',
                 textAlign: TextAlign.center,
+
                 style: const TextStyle(fontSize: 16, height: 1.6),
               ),
             ),
@@ -573,30 +624,27 @@ class QuizResultScreen extends StatelessWidget {
             const SizedBox(height: 40),
 
             // BOTONES: Retake y Done
+            // BOTONES: Retake y Done
             Row(
               children: [
-                // Botón RETAKE
+                // 🔁 BOTÓN RETAKE
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      // Limpiamos TODAS las capas de caché
                       final user = FirebaseAuth.instance.currentUser;
                       if (user == null) return;
+
                       debugPrint('Offline desde la view');
                       await QuizStorageManager.clearAll(user.uid);
 
-
-
                       if (!context.mounted) return;
 
-                      // Volvemos a la pantalla del quiz
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ChangeNotifierProvider(
                             create: (_) => QuizViewModel(),
                             child: const QuizScreen(forceRetake: true),
-
                           ),
                         ),
                       );
@@ -605,27 +653,46 @@ class QuizResultScreen extends StatelessWidget {
                     label: const Text('Retake Quiz'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(
+                        color: Color(0xFF6389E2),
+                        width: 2,
+                      ),
+                      foregroundColor: const Color(0xFF6389E2),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
 
-                // Botón DONE
+                const SizedBox(width: 14),
+
+                // ✅ BOTÓN DONE
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      // No hacemos nada extra aquí porque ya se guardó todo
-                      // en _showResults() cuando se navegó a esta pantalla
-
                       if (!context.mounted) return;
-
-                      // Volvemos al inicio
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
                     icon: const Icon(Icons.check_circle),
                     label: const Text('Done'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6389E2),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 3,
+                      shadowColor: const Color(0xFF6389E2).withOpacity(0.35),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),

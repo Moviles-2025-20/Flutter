@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../util/quizConstant.dart';
@@ -78,13 +79,15 @@ class _MindCardsGrid extends StatelessWidget {
           onTap: () => onCardTap(CardType.FreeTimeEvents),
         ),
         FutureBuilder<List<IconData>>(
-          future: QuizStorageManager.getHomeIcons(),
+          future: QuizStorageManager.getHomeIcons(
+            FirebaseAuth.instance.currentUser?.uid ?? '',
+          ),
           builder: (context, snapshot) {
             final icons = snapshot.data ?? [Icons.psychology];
 
             return MindCard(
               title: 'Mood Quiz',
-              color: Color(0xFFED6275),
+              color: const Color(0xFFED6275),
               onTap: () => onCardTap(CardType.MoodQuiz),
               leading: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -100,6 +103,7 @@ class _MindCardsGrid extends StatelessWidget {
             );
           },
         ),
+
 
         MindCard(
           title: 'Map',

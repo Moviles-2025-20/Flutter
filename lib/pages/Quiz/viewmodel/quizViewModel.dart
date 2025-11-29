@@ -2,9 +2,11 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../util/firebase_service.dart';
+import '../../../util/local_DB_service.dart';
 import '../../../util/quizConstant.dart'; // ← NUEVO import
 import '../model/optionModel.dart';
 import '../model/questionModel.dart';
@@ -60,20 +62,72 @@ class QuizViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final doc = await _firestore
-          .collection('quiz_questions')
-          .doc('lOhEPYC8ci9lBEo08G47')
-          .get();
+      final localDb = LocalUserService();
+      List<Map<String, dynamic>> questionsRaw = [];
 
-      final data = doc.data();
-      if (data == null) return;
+      // PASO 1: Intentar desde SQLite primero
+      final hasCachedQuestions = await localDb.hasQuizQuestions();
 
-      final List questionsRaw = data['questions'];
+      if (hasCachedQuestions) {
+        print('Cargando preguntas desde SQLite cache');
+        questionsRaw = await localDb.getQuizQuestions();
+      } else {
+        print('No hay preguntas en caché, intentando Firebase');
 
-      final allQuestions = questionsRaw.map((q) => Question.fromMap(q)).toList();
 
-      allQuestions.shuffle(Random());
-      _selectedQuestions = allQuestions.take(5).toList();
+        final connectivity = await Connectivity().checkConnectivity();
+        final hasInternet = connectivity != ConnectivityResult.none;
+
+        if (!hasInternet) {
+          print('Sin internet, no se intenta Firebase');
+          _loading = false;
+          notifyListeners();
+          return;
+        }
+
+        print('Internet disponible, intentando Firebase');
+
+        // PASO 2: Intentar desde Firebase
+        try {
+          final doc = await _firestore
+              .collection('quiz_questions')
+              .doc('lOhEPYC8ci9lBEo08G47')
+              .get();
+
+          final data = doc.data();
+
+          if (data != null && data['questions'] != null) {
+            questionsRaw = List<Map<String, dynamic>>.from(data['questions']);
+
+
+          }
+        } catch (e) {
+          print('Error descargando de Firebase: $e');
+
+
+          if (questionsRaw.isEmpty) {
+            // No hay preguntas ni en Firebase ni en SQLite
+            _loading = false;
+            notifyListeners();
+            return;
+          }
+        }
+      }
+
+      // PASO 5: Convertir a objetos Question
+      final allQuestions = questionsRaw
+          .map((q) => Question.fromMap(q))
+          .toList();
+
+      // PASO 6: Seleccionar 5 aleatorias
+      if (allQuestions.length >= 5) {
+        allQuestions.shuffle(Random());
+        _selectedQuestions = allQuestions.take(5).toList();
+      } else {
+        // Si hay menos de 5, usar todas
+        _selectedQuestions = allQuestions;
+      }
+
       _currentIndex = 0;
       _completed = false;
 
@@ -83,7 +137,21 @@ class QuizViewModel extends ChangeNotifier {
 
       _loading = false;
       notifyListeners();
+
+      print('✓ Quiz cargado con ${_selectedQuestions.length} preguntas');
+
+      // ---------- PASO 3 (AJUSTADO): Guardar en SQLite SOLO si estaba vacío ----------
+      if (!hasCachedQuestions) {
+        // En background, NO await
+        localDb.saveQuizQuestions(questionsRaw).then(
+              (_) => print('✓ Preguntas guardadas en SQLite'),
+        ).catchError(
+              (e) => print('Error guardando SQLite: $e'),
+        );
+      }
+
     } catch (e) {
+      print('Error crítico cargando quiz: $e');
       _loading = false;
       notifyListeners();
     }
@@ -205,6 +273,7 @@ class QuizViewModel extends ChangeNotifier {
     // 3. Archivo local (persistencia offline)
     // 4. Firebase (sincronización en la nube, solo si hay internet)
     await QuizStorageManager.saveResult(userResult);
+
 
   }
 

@@ -101,119 +101,153 @@ class UserQuizResult {
   }
 }
 
-//  CAPA 1: SHARED PREFERENCES (Solo iconos/categorías para UI rápida)
+// ============ CAPA 1: SHARED PREFERENCES (POR USUARIO) ============
 class QuizSharedPrefs {
-  static const String _keyCategories = 'quiz_categories';
-  static const String _keyIcons = 'quiz_icon_names';
+  // Keys DINÁMICAS por usuario
+  static String _categoriesKey(String userId) =>
+      'quiz_categories_$userId';
+
+  static String _iconsKey(String userId) =>
+      'quiz_icon_names_$userId';
 
   /// Guarda solo las categorías e iconos para mostrar rápido en perfil
   static Future<void> saveQuickData({
+    required String userId,
     required List<String> categories,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
       // Guardamos categorías como JSON string
-      await prefs.setString(_keyCategories, jsonEncode(categories));
+      await prefs.setString(
+        _categoriesKey(userId),
+        jsonEncode(categories),
+      );
 
       // Guardamos nombres de iconos (para poder reconstruir los IconData)
       final iconNames = categories
-          .map((cat) => QuizConstants.categoryIcons[cat]?.codePoint.toString() ?? '')
+          .map(
+            (cat) =>
+        QuizConstants.categoryIcons[cat]?.codePoint.toString() ?? '',
+      )
           .toList();
-      await prefs.setString(_keyIcons, jsonEncode(iconNames));
+
+      await prefs.setString(
+        _iconsKey(userId),
+        jsonEncode(iconNames),
+      );
     } catch (e) {
-      print('Error saving to SharedPreferences: $e');
+      debugPrint('Error saving to SharedPreferences: $e');
     }
   }
 
-  /// Obtiene las categorías guardadas
-  static Future<List<String>> getCategories() async {
+  /// Obtiene las categorías guardadas del usuario actual
+  static Future<List<String>> getCategories(String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final categoriesJson = prefs.getString(_keyCategories);
+      final categoriesJson = prefs.getString(_categoriesKey(userId));
 
       if (categoriesJson == null) return [];
 
       return List<String>.from(jsonDecode(categoriesJson));
     } catch (e) {
-      print('Error reading from SharedPreferences: $e');
+      debugPrint('Error reading categories from SharedPreferences: $e');
       return [];
     }
   }
 
-  /// Obtiene los iconos para mostrar en Home
-  static Future<List<IconData>> getIcons() async {
+  /// Obtiene los iconos para mostrar en Home (por usuario)
+  static Future<List<IconData>> getIcons(String userId) async {
     try {
-      final categories = await getCategories();
+      final categories = await getCategories(userId);
 
       if (categories.isEmpty) return [Icons.psychology];
 
       return categories
-          .map((cat) => QuizConstants.categoryIcons[cat] ?? Icons.psychology)
+          .map(
+            (cat) =>
+        QuizConstants.categoryIcons[cat] ?? Icons.psychology,
+      )
           .toList();
     } catch (e) {
-      print('Error getting icons: $e');
+      debugPrint('Error getting icons from SharedPreferences: $e');
       return [Icons.psychology];
     }
   }
 
-  /// Limpia los datos (cuando hace logout o reset)
-  static Future<void> clear() async {
+  /// Limpia SOLO los datos del usuario actual
+  static Future<void> clear(String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_keyCategories);
-      await prefs.remove(_keyIcons);
+      await prefs.remove(_categoriesKey(userId));
+      await prefs.remove(_iconsKey(userId));
     } catch (e) {
-      print('Error clearing SharedPreferences: $e');
+      debugPrint('Error clearing SharedPreferences: $e');
     }
   }
 }
 
-//  CAPA 2: LRU CACHE
+
+// ============ CAPA 2: LRU CACHE (POR USUARIO) ============
 class QuizLRUCache {
-  static UserQuizResult? _cachedResult;
+  // Cache en memoria por usuario (LRU = solo último resultado)
+  static final Map<String, UserQuizResult> _cachedResults = {};
 
-  /// Guarda en caché LRU (solo el último resultado)
-  static Future<void> save(UserQuizResult result) async {
-    _cachedResult = result;
+  /// Guarda en caché LRU (solo el último resultado del usuario)
+  static Future<void> save({
+    required String userId,
+    required UserQuizResult result,
+  }) async {
+    _cachedResults[userId] = result;
   }
 
-  /// Obtiene el resultado en caché
-  static Future<UserQuizResult?> get() async {
-    return _cachedResult;
+  /// Obtiene el resultado en caché del usuario
+  static Future<UserQuizResult?> get(String userId) async {
+    return _cachedResults[userId];
   }
 
-  /// Limpia el caché
-  static Future<void> clear() async {
-    _cachedResult = null;
+  /// Limpia el caché del usuario
+  static Future<void> clear(String userId) async {
+    _cachedResults.remove(userId);
+  }
+
+  /// Limpia todo el caché (debug / memory pressure)
+  static Future<void> clearAll() async {
+    _cachedResults.clear();
   }
 }
 
-//  CAPA 3: ARCHIVO LOCAL (Persistencia offline completa)
-class QuizFileStorage {
-  static const String _fileName = 'quiz_latest_result.json';
 
-  static Future<File> _getFile() async {
+// ============ CAPA 3: ARCHIVO LOCAL (POR USUARIO) ============
+class QuizFileStorage {
+  /// Nombre de archivo dinámico por usuario
+  static String _fileName(String userId) =>
+      'quiz_latest_result_$userId.json';
+
+  static Future<File> _getFile(String userId) async {
     final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
+    return File('${dir.path}/${_fileName(userId)}');
   }
 
   /// Guarda el resultado completo en archivo local
-  static Future<void> save(UserQuizResult result) async {
+  static Future<void> save({
+    required String userId,
+    required UserQuizResult result,
+  }) async {
     try {
-      final file = await _getFile();
+      final file = await _getFile(userId);
       final jsonString = jsonEncode(result.toMap());
       await file.writeAsString(jsonString);
     } catch (e) {
-      print('Error saving to file: $e');
+      debugPrint('Error saving quiz result to file: $e');
       rethrow;
     }
   }
 
-  /// Lee el último resultado del archivo
-  static Future<UserQuizResult?> read() async {
+  /// Lee el último resultado del usuario desde archivo local
+  static Future<UserQuizResult?> read(String userId) async {
     try {
-      final file = await _getFile();
+      final file = await _getFile(userId);
 
       if (!await file.exists()) return null;
 
@@ -222,30 +256,30 @@ class QuizFileStorage {
 
       return UserQuizResult.fromMap(map);
     } catch (e) {
-      print('Error reading from file: $e');
+      debugPrint('Error reading quiz result from file: $e');
       return null;
     }
   }
 
-  /// Limpia el archivo
-  static Future<void> clear() async {
+  /// Limpia el archivo local del usuario
+  static Future<void> clear(String userId) async {
     try {
-      final file = await _getFile();
+      final file = await _getFile(userId);
       if (await file.exists()) {
         await file.delete();
       }
     } catch (e) {
-      print('Error clearing file: $e');
+      debugPrint('Error clearing quiz file: $e');
     }
   }
 }
 
-//  CAPA 4: FIREBASE
-class QuizFirebaseStorage {
 
+// ============ CAPA 4: FIREBASE ============
+class QuizFirebaseStorage {
   static final FirebaseFirestore _db = FirebaseService.firestore;
 
-  /// Guarda en Firebase (crea o actualiza en una sola operación)
+  /// Guarda en Firebase (create/update atómico por usuario)
   static Future<void> save({
     required UserQuizResult result,
     FirebaseFirestore? firestore,
@@ -254,7 +288,7 @@ class QuizFirebaseStorage {
 
     try {
       final userDocRef =
-      db.collection('quiz_answers').doc(result.userId);
+      db.collection('user_quiz_results').doc(result.userId);
 
       await userDocRef.set(
         {
@@ -281,7 +315,7 @@ class QuizFirebaseStorage {
 
     try {
       final doc =
-      await db.collection('quiz_answers').doc(userId).get();
+      await db.collection('user_quiz_results').doc(userId).get();
 
       if (!doc.exists) return null;
 
@@ -297,129 +331,149 @@ class QuizFirebaseStorage {
     }
   }
 
+  /// Borra SOLO el resultado del usuario (logout/reset)
   static Future<void> clearResult(String userId) async {
-    final doc = _db.collection('quiz_answers').doc(userId);
+    final doc = _db.collection('user_quiz_results').doc(userId);
 
     final snapshot = await doc.get();
     if (snapshot.exists) {
       await doc.delete();
     }
   }
-
 }
 
 
-// ============ GESTOR MAESTRO (Coordina todas las capas) ============
+
+// ============ GESTOR MAESTRO ============
 class QuizStorageManager {
-  /// Guarda el resultado en TODAS las capas de forma coordinada
+  /// Guarda el resultado en TODAS las capas
   static Future<void> saveResult(UserQuizResult result) async {
-    // CAPA 1: SharedPreferences (datos rápidos para UI)
+    final userId = result.userId;
+
+    // CAPA 1: SharedPreferences (UI rápida)
     await QuizSharedPrefs.saveQuickData(
+      userId: userId,
       categories: result.resultCategories,
     );
 
-    // CAPA 2: LRU Cache (en memoria)
-    await QuizLRUCache.save(result);
+    // CAPA 2: LRU Cache (RAM)
+    await QuizLRUCache.save(
+      userId: userId,
+      result: result,
+    );
 
-    // CAPA 3: Archivo local (persistencia offline)
+    // CAPA 3: Archivo local (offline)
     try {
-      await QuizFileStorage.save(result);
+      await QuizFileStorage.save(
+        userId: userId,
+        result: result,
+      );
     } catch (e) {
-      print('Warning: Failed to save to local file: $e');
+      debugPrint('Warning: Failed to save file: $e');
     }
 
     // CAPA 4: Firebase (si hay internet)
     try {
-      await QuizFirebaseStorage.save(result: result);
+      if (await _hasInternet()) {
+        await QuizFirebaseStorage.save(result: result);
+      }
     } catch (e) {
-      print('Warning: Failed to save to Firebase (offline?): $e');
-      // No lanzamos error, el usuario puede estar offline
+      debugPrint('Firebase offline or error: $e');
     }
   }
 
-  /// Obtiene el resultado más reciente (busca en orden: Cache → Archivo → Firebase)
+  /// Obtiene el último resultado (LRU → Archivo → Firebase)
   static Future<UserQuizResult?> getLatestResult(String userId) async {
-    // 1. Intenta desde caché LRU (más rápido)
-    var result = await QuizLRUCache.get();
+    // 1️⃣ LRU Cache
+    var result = await QuizLRUCache.get(userId);
     if (result != null) {
-      print('Loaded from LRU cache');
+      debugPrint('Loaded from LRU');
       return result;
     }
 
-    // 2. Intenta desde archivo local
-    try {
-      result = await QuizFileStorage.read();
-      if (result != null) {
-        print('Loaded from local file');
-        // Lo ponemos en caché para la próxima
-        await QuizLRUCache.save(result);
-        return result;
-      }
-    } catch (e) {
-      print('Error reading local file: $e');
+    // 2️⃣ Archivo local
+    result = await QuizFileStorage.read(userId);
+    if (result != null) {
+      debugPrint('Loaded from file');
+      await QuizLRUCache.save(userId: userId, result: result);
+      return result;
     }
 
-    // 3. Intenta desde Firebase (si hay internet)
-    try {
+    // 3️⃣ Firebase
+    if (await _hasInternet()) {
       result = await QuizFirebaseStorage.read(userId: userId);
       if (result != null) {
-        print('Loaded from Firebase');
-        // Lo guardamos en las capas locales
-        await QuizLRUCache.save(result);
-        await QuizFileStorage.save(result);
+        debugPrint('Loaded from Firebase');
+        await QuizLRUCache.save(userId: userId, result: result);
+        await QuizFileStorage.save(userId: userId, result: result);
         return result;
       }
-    } catch (e) {
-      print('Error reading from Firebase: $e');
     }
 
     return null;
   }
 
+  /// Limpia TODAS las capas (logout / retake)
+  static Future<void> clearAll(String userId) async {
+    debugPrint('ClearAll: limpiando capas locales');
 
+    await Future.wait([
+      QuizSharedPrefs.clear(userId),
+      QuizLRUCache.clear(userId),
+      QuizFileStorage.clear(userId),
+    ]);
+
+    if (!await _hasInternet()) return;
+
+    try {
+      await QuizFirebaseStorage.clearResult(userId);
+      debugPrint('Firebase limpiado');
+    } catch (e) {
+      debugPrint('Firebase clear error: $e');
+    }
+  }
+
+  /// Utilidades UI rápidas (POR USUARIO)
+  static Future<List<IconData>> getHomeIcons(String userId) async {
+    if (userId.isEmpty) return [Icons.question_mark];
+    return QuizSharedPrefs.getIcons(userId);
+  }
+
+  static Future<List<String>> getCategories(String userId) async {
+    if (userId.isEmpty) return [];
+    return QuizSharedPrefs.getCategories(userId);
+  }
+
+  /// Internet check
   static Future<bool> _hasInternet() async {
     final result = await Connectivity().checkConnectivity();
     return result != ConnectivityResult.none;
   }
 
-  /// Limpia TODAS las capas (útil para logout o reset)
-  static Future<void> clearAll(String userId) async {
-    // SIEMPRE borrar local (offline-safe)
-    debugPrint('ClearAll: borrando local');
+  static Future<void> syncPendingQuizToFirebase(String userId) async {
+    // 1. Leer quiz desde archivo local
+    final localResult = await QuizFileStorage.read(userId);
 
-    await Future.wait([
-      QuizSharedPrefs.clear(),
-      QuizLRUCache.clear(),
-      QuizFileStorage.clear(),
-    ]);
-
-    debugPrint('ClearAll: local OK');
-
-    //  Verificamos internet ANTES
-    final hasInternet = await _hasInternet();
-
-    if (!hasInternet) {
-      debugPrint('ClearAll: sin internet → no tocar Firebase');
-      return; //
+    if (localResult == null) {
+      debugPrint('No pending quiz to sync');
+      return;
     }
 
-    // Firebase SOLO si hay red
+    if (localResult.userId != userId) {
+      debugPrint('Pending quiz belongs to another user');
+      return;
+    }
+
     try {
-      debugPrint('ClearAll: borrando Firebase');
-      await QuizFirebaseStorage.clearResult(userId);
-      debugPrint('ClearAll: Firebase OK');
+      debugPrint('Syncing pending quiz to Firebase...');
+      await QuizFirebaseStorage.save(result: localResult);
+
+      debugPrint('Quiz synced successfully ✅');
+      // ⚠️ NO borrar archivo si quieres historial
+      // await QuizFileStorage.clear();
     } catch (e) {
-      debugPrint('ClearAll: Firebase error $e');
+      debugPrint('Failed to sync quiz: $e');
     }
   }
 
-
-
-  /// Obtiene iconos para mostrar en Home (solo SharedPreferences, super rápido)
-  static Future<List<IconData>> getHomeIcons() async {
-    return await QuizSharedPrefs.getIcons();
-  }
-  static Future<List<String>> getCategories() async {
-    return await QuizSharedPrefs.getCategories();
-  }
 }

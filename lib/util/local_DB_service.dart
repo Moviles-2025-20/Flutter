@@ -102,6 +102,15 @@ class LocalUserService {
       )
     ''');
     print("✓ Tabla 'events' creada");
+
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS quiz_questions (
+    id TEXT PRIMARY KEY,
+    text TEXT NOT NULL,
+    options TEXT NOT NULL
+  )
+''');
+    print("✓ Tabla 'quiz_questions' creada");
     
     print("✓ Todas las tablas creadas correctamente");
   } catch (e) {
@@ -358,6 +367,83 @@ class LocalUserService {
       print('SQLite cache cleared');
     } catch (e) {
       print('Error clearing SQLite cache: $e');
+    }
+  }
+
+  // ================= QUIZ QUESTIONS METHODS =================
+
+  /// Guarda las preguntas del quiz en SQLite
+  Future<void> saveQuizQuestions(List<Map<String, dynamic>> questions) async {
+    try {
+      final db = await database;
+
+      await db.transaction((txn) async {
+        // Limpiamos preguntas viejas
+        await txn.delete('quiz_questions');
+
+        // Insertamos las nuevas
+        for (final question in questions) {
+          await txn.insert(
+            'quiz_questions',
+            {
+              'id': question['id'],
+              'text': question['text'],
+              'options': jsonEncode(question['options']), // Serializamos el array
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      });
+
+      print('✓ Guardadas ${questions.length} preguntas en SQLite');
+    } catch (e) {
+      print('✗ Error guardando preguntas en SQLite: $e');
+    }
+  }
+
+  /// Obtiene todas las preguntas del quiz desde SQLite
+  Future<List<Map<String, dynamic>>> getQuizQuestions() async {
+    try {
+      final db = await database;
+      final results = await db.query('quiz_questions');
+
+      // Deserializamos las opciones
+      return results.map((row) {
+        return {
+          'id': row['id'],
+          'text': row['text'],
+          'options': jsonDecode(row['options'] as String),
+        };
+      }).toList();
+    } catch (e) {
+      print('✗ Error leyendo preguntas de SQLite: $e');
+      return [];
+    }
+  }
+
+  /// Verifica si hay preguntas en SQLite
+  Future<bool> hasQuizQuestions() async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) FROM quiz_questions',
+      );
+      final count = Sqflite.firstIntValue(result) ?? 0;
+      return count >= 20; // Verificamos que haya al menos 20
+    } catch (e) {
+      print('✗ Error verificando preguntas: $e');
+      return false;
+    }
+  }
+
+  /// Limpia las preguntas del quiz
+  Future<void> clearQuizQuestions() async {
+    try {
+      final db = await database;
+      await db.delete('quiz_questions');
+      print('✓ Preguntas del quiz limpiadas');
+    } catch (e) {
+      print('✗ Error limpiando preguntas: $e');
     }
   }
 }

@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class ProfileViewModel extends ChangeNotifier {
+
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final localUserService = LocalUserService();
@@ -612,9 +613,26 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
   Future<void> loadQuizCategories() async {
-    _quizCategories = await QuizStorageManager.getCategories();
+    if (_currentUser == null) return;
+
+    _quizCategories =
+    await QuizStorageManager.getCategories(_currentUser!.uid);
+
     notifyListeners();
   }
+
+
+  Future<void> refreshQuizResult(String userId) async {
+  final result = await QuizStorageManager.getLatestResult(userId);
+
+  if (result == null) return;
+
+  _quizCategories = result.resultCategories;
+  notifyListeners();
+  }
+
+
+
 
 
   /// Limpiar error

@@ -625,88 +625,162 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-
-
-/// Widget que muestra la categoría del quiz del usuario en Profile
-class ProfileQuizCategory extends StatefulWidget {
+class ProfileQuizCategory extends StatelessWidget {
   const ProfileQuizCategory({super.key});
 
   @override
-  State<ProfileQuizCategory> createState() => _ProfileQuizCategoryState();
-}
-
-class _ProfileQuizCategoryState extends State<ProfileQuizCategory> {
-  late Future<List<String>> _categoriesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    _categoriesFuture = QuizStorageManager.getCategories();
-  }
-
-  /// Llamar cuando el quiz cambie
-  void refresh() {
-    setState(_load);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<String>>(
-      future: _categoriesFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    return Consumer<ProfileViewModel>(
+      builder: (context, vm, _) {
+        final categories = vm.quizCategories;
+        if (categories.isEmpty) return const SizedBox.shrink();
 
-        final categories = snapshot.data!;
         final isMixed = categories.length > 1;
 
         return Container(
-          margin: const EdgeInsets.only(top: 16),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12), // ⬇ antes 14
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isMixed
-                  ? [Colors.purple.shade50, Colors.blue.shade50]
-                  : [
-                QuizConstants.categoryColors[categories.first]!
-                    .withOpacity(0.15),
-                QuizConstants.categoryColors[categories.first]!
-                    .withOpacity(0.05),
-              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _getGradientColors(categories, isMixed),
             ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                QuizConstants.categoryIcons[categories.first],
-                size: 36,
-                color: QuizConstants.categoryColors[categories.first],
+            borderRadius: BorderRadius.circular(14), // ⬇ antes 16
+            boxShadow: [
+              BoxShadow(
+                color: _getPrimaryColor(categories).withOpacity(0.22),
+                blurRadius: 8, // ⬇ antes 10
+                offset: const Offset(0, 4), // ⬇ antes (0,5)
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  isMixed
-                      ? categories
-                      .map(QuizConstants.getCategoryName)
-                      .join(' & ')
-                      : QuizConstants.getCategoryName(categories.first),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
+            ],
+          ),
+          child: Column(
+            children: [
+              _buildIconsSection(categories, isMixed),
+              const SizedBox(height: 8), // ⬇ antes 10
+
+              Text(
+                'Mood Quiz Result',
+                style: TextStyle(
+                  fontSize: 10.5, // ⬇ antes 11
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                  letterSpacing: 1.05,
                 ),
               ),
+              const SizedBox(height: 5),
+
+              Text(
+                isMixed
+                    ? categories
+                    .map((c) => QuizConstants.getCategoryName(c))
+                    .join(' & ')
+                    : QuizConstants.getCategoryName(categories.first),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16, // ⬇ antes 18
+                  fontWeight: FontWeight.bold,
+                  color: _getPrimaryColor(categories),
+                ),
+              ),
+
+              if (isMixed) ...[
+                const SizedBox(height: 5),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    'Mixed Personality',
+                    style: TextStyle(
+                      fontSize: 9.5, // ⬇ antes 10
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
       },
     );
   }
+
+  // ---------- ICONOS ----------
+  Widget _buildIconsSection(List<String> categories, bool isMixed) {
+    if (!isMixed) {
+      return Container(
+        padding: const EdgeInsets.all(12), // ⬇ antes 14
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          QuizConstants.categoryIcons[categories.first],
+          size: 36, // ⬇ antes 42
+          color: QuizConstants.categoryColors[categories.first],
+        ),
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: categories.take(2).map((cat) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Container(
+              padding: const EdgeInsets.all(10), // ⬇ antes 12
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.4),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                QuizConstants.categoryIcons[cat],
+                size: 26, // ⬇ antes 30
+                color: QuizConstants.categoryColors[cat],
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+  }
+
+  // ---------- COLORES ----------
+  List<Color> _getGradientColors(List<String> categories, bool isMixed) {
+    if (!isMixed) {
+      final baseColor = QuizConstants.categoryColors[categories.first]!;
+      return [
+        baseColor.withOpacity(0.2),
+        baseColor.withOpacity(0.05),
+      ];
+    }
+    return [
+      QuizConstants.categoryColors[categories[0]]!.withOpacity(0.15),
+      QuizConstants.categoryColors[categories[1]]!.withOpacity(0.15),
+    ];
+  }
+
+  Color _getPrimaryColor(List<String> categories) {
+    return QuizConstants.categoryColors[categories.first] ?? Colors.blue;
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
