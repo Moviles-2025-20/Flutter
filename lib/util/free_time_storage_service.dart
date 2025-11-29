@@ -19,7 +19,7 @@ class EventStorageService {
     debugPrint(' LRU Cache initialized (max: $_maxCacheSize)');
   }
 
-  // ========== SAVE ==========
+  //  SAVE
 
   /// Guarda los 3 primeros eventos en cache y en disco
   Future<void> saveUserEvents(String userId, List<EventsModel.Event> events) async {
@@ -34,9 +34,9 @@ class EventStorageService {
     debugPrint('Guardados ${top3.length} eventos para $userId');
   }
 
-  // ========== LOAD ==========
+  //  LOAD
 
-  /// Intenta cargar desde cache → disco
+  /// Intenta cargar desde cache disco
   Future<List<Map<String, dynamic>>> loadUserEvents(String userId) async {
     final cached = _cache[userId];
     if (cached != null && cached.isNotEmpty) {
@@ -55,7 +55,8 @@ class EventStorageService {
     return [];
   }
 
-  // ========== PERSISTENCIA ==========
+  //
+  // PERSISTENCIA
 
   Future<void> _saveToLocalStorage() async {
     try {
