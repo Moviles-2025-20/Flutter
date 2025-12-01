@@ -26,7 +26,7 @@ class LocalUserService {
     print("Creando base de datos en: $path");
     return await openDatabase(
       path,
-      version: 4, // Increment version for schema change
+      version: 5, // Increment version for schema change
       onConfigure: (db) async {
          await db.execute('PRAGMA foreign_keys = ON');
       },

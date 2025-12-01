@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../pages/Quiz/viewmodel/quizViewModel.dart';
 import '../util/quizConstant.dart';
 
 enum CardType { weeklyChallenge, FreeTimeEvents, MoodQuiz, map }
@@ -78,32 +80,30 @@ class _MindCardsGrid extends StatelessWidget {
           color: Color(0xFFED6275),
           onTap: () => onCardTap(CardType.FreeTimeEvents),
         ),
-        FutureBuilder<List<IconData>>(
-          future: QuizStorageManager.getHomeIcons(
-            FirebaseAuth.instance.currentUser?.uid ?? '',
-          ),
-          builder: (context, snapshot) {
-            final icons = snapshot.data ?? [Icons.psychology];
+        Selector<QuizViewModel, List<IconData>>(
+          selector: (context, quizVM) => quizVM.homeIcons,
+          builder: (context, icons, child) {
+            debugPrint('🏠 Home Selector rebuild - icons: ${icons.length}');
+            debugPrint('   Iconos: ${icons.map((i) => i.codePoint).join(", ")}');
 
             return MindCard(
               title: 'Mood Quiz',
               color: const Color(0xFFED6275),
               onTap: () => onCardTap(CardType.MoodQuiz),
-              leading: Row(
+              leading: icons.isEmpty
+                  ? const Icon(Icons.psychology, color: Colors.white, size: 22)
+                  : Row(
                 mainAxisSize: MainAxisSize.min,
-                children: icons
-                    .map(
+                children: icons.map(
                       (icon) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Icon(icon, color: Colors.white, size: 22),
                   ),
-                )
-                    .toList(),
+                ).toList(),
               ),
             );
           },
         ),
-
 
         MindCard(
           title: 'Map',

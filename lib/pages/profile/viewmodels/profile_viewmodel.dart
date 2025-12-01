@@ -622,14 +622,25 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
 
-  Future<void> refreshQuizResult(String userId) async {
-  final result = await QuizStorageManager.getLatestResult(userId);
+  Future<void> refreshQuizCategories(String userId) async {
+    debugPrint('🔄 ============ refreshQuizCategories INICIADO ============');
+    debugPrint('   userId: $userId');
 
-  if (result == null) return;
+    // Esperar un momento para que SharedPreferences termine de escribir
+    await Future.delayed(const Duration(milliseconds: 100));
 
-  _quizCategories = result.resultCategories;
-  notifyListeners();
+    final categories = await QuizStorageManager.getCategories(userId);
+
+    debugPrint('📦 Categorías obtenidas: $categories');
+
+    _quizCategories = categories;
+
+    debugPrint('✅ _quizCategories actualizado: $_quizCategories');
+    debugPrint('🔄 ============ refreshQuizCategories COMPLETO ============\n');
+
+    notifyListeners(); // 🔔 Fuerza reconstrucción de ProfilePage
   }
+
 
 
 

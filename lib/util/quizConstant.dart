@@ -4,6 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
+
 
 import 'firebase_service.dart';
 
@@ -118,6 +120,10 @@ class QuizSharedPrefs {
     try {
       final prefs = await SharedPreferences.getInstance();
 
+      debugPrint('💾 Guardando en SharedPreferences:');
+      debugPrint('   userId: $userId');
+      debugPrint('   categories: $categories');
+
       // Guardamos categorías como JSON string
       await prefs.setString(
         _categoriesKey(userId),
@@ -136,6 +142,14 @@ class QuizSharedPrefs {
         _iconsKey(userId),
         jsonEncode(iconNames),
       );
+
+      final savedCategories = prefs.getString(_categoriesKey(userId));
+      final savedIcons = prefs.getString(_iconsKey(userId));
+
+      debugPrint('✅ Guardado exitoso:');
+      debugPrint('   savedCategories: $savedCategories');
+      debugPrint('   savedIcons: $savedIcons');
+
     } catch (e) {
       debugPrint('Error saving to SharedPreferences: $e');
     }
@@ -436,12 +450,26 @@ class QuizStorageManager {
   /// Utilidades UI rápidas (POR USUARIO)
   static Future<List<IconData>> getHomeIcons(String userId) async {
     if (userId.isEmpty) return [Icons.question_mark];
-    return QuizSharedPrefs.getIcons(userId);
+
+    // FIX: Primero intentar leer desde SharedPreferences actualizado
+    final icons = await QuizSharedPrefs.getIcons(userId);
+
+    // Si no hay iconos guardados, retornar default
+    if (icons.isEmpty || (icons.length == 1 && icons[0] == Icons.psychology)) {
+      debugPrint('⚠️ No hay iconos guardados para $userId');
+      return [Icons.psychology];
+    }
+
+    return icons;
   }
 
   static Future<List<String>> getCategories(String userId) async {
     if (userId.isEmpty) return [];
-    return QuizSharedPrefs.getCategories(userId);
+
+    // FIX: Leer directamente desde SharedPreferences (es síncrono y rápido)
+    final categories = await QuizSharedPrefs.getCategories(userId);
+    debugPrint('📋 Categorías obtenidas: $categories');
+    return categories;
   }
 
   /// Internet check
@@ -449,6 +477,8 @@ class QuizStorageManager {
     final result = await Connectivity().checkConnectivity();
     return result != ConnectivityResult.none;
   }
+
+
 
   static Future<void> syncPendingQuizToFirebase(String userId) async {
     // 1. Leer quiz desde archivo local
