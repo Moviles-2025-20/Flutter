@@ -5,6 +5,7 @@ class UserBadge {
   final bool isUnlocked;           // Si ya lo ganó
   final int progress;              // Progreso actual
   final DateTime? earnedAt;        // Fecha del logro
+  final List<String> completedActivityIds; // IDs de actividades que contribuyeron al progreso
 
   UserBadge({
     required this.id,
@@ -13,6 +14,7 @@ class UserBadge {
     required this.isUnlocked,
     required this.progress,
     required this.earnedAt,
+    this.completedActivityIds = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class UserBadge {
       'isUnlocked': isUnlocked,
       'progress': progress,
       'earnedAt': earnedAt?.toIso8601String(),
+      'completedActivityIds': completedActivityIds,
     };
   }
 
@@ -34,6 +37,7 @@ class UserBadge {
       isUnlocked: map['isUnlocked'] ?? false,
       progress: map['progress'] ?? 0,
       earnedAt: map['earnedAt'] != null ? DateTime.parse(map['earnedAt']) : null,
+      completedActivityIds: List<String>.from(map['completedActivityIds'] ?? []),
     );
   }
 }
