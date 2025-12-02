@@ -231,6 +231,7 @@ class BadgeMedalViewModel extends ChangeNotifier {
     String badgeMedalId,
     int newProgress, {
     List<String>? criteria,
+    List<String>? newActivityIds, // IDs de actividades nuevas (ej. eventId)
   }) async {
     try {
       UserBadge? userBadge = getUserBadgeProgress(badgeMedalId);
@@ -239,17 +240,37 @@ class BadgeMedalViewModel extends ChangeNotifier {
       Badge_Medal? badgeMedal = getBadgeMedalById(badgeMedalId);
       if (badgeMedal == null) return;
 
+      // 1. Actualizar lista de actividades completadas
+      List<String> currentActivityIds = List.from(userBadge.completedActivityIds);
+      
+      if (newActivityIds != null) {
+        for (final id in newActivityIds) {
+          if (!currentActivityIds.contains(id)) {
+            currentActivityIds.add(id);
+          }
+        }
+      }
+
+      // 2. Calcular nuevo progreso basado en el tipo
+      int calculatedProgress = newProgress;
+      
+      // Si el badge depende de contar items únicos (como eventos asistidos),
+      // el progreso es la longitud de la lista de IDs únicos.
+      if (badgeMedal.criteriaType == 'events_attended') {
+        calculatedProgress = currentActivityIds.length;
+      }
+
       bool shouldUnlock = false;
 
       switch (badgeMedal.criteriaType) {
         case 'tasks_completed':
-          shouldUnlock = newProgress >= (badgeMedal.criteriaValue as int);
+          shouldUnlock = calculatedProgress >= (badgeMedal.criteriaValue as int);
           break;
         case 'streak_days':
-          shouldUnlock = newProgress >= (badgeMedal.criteriaValue as int);
+          shouldUnlock = calculatedProgress >= (badgeMedal.criteriaValue as int);
           break;
         case 'total_hours':
-          shouldUnlock = newProgress >= (badgeMedal.criteriaValue as int);
+          shouldUnlock = calculatedProgress >= (badgeMedal.criteriaValue as int);
           break;
         case 'categories_explored':
           shouldUnlock = (criteria?.length ?? 0) >= (badgeMedal.criteriaValue as int);
@@ -257,6 +278,9 @@ class BadgeMedalViewModel extends ChangeNotifier {
         case 'custom_challenge':
           shouldUnlock = criteria?.contains(badgeMedal.criteriaValue) ?? false;
           break;
+        case 'events_attended':
+           shouldUnlock = calculatedProgress >= (badgeMedal.criteriaValue as int);
+           break;
       }
 
       final updatedUserBadge = UserBadge(
@@ -264,8 +288,9 @@ class BadgeMedalViewModel extends ChangeNotifier {
         userId: userBadge.userId,
         badgeId: userBadge.badgeId,
         isUnlocked: userBadge.isUnlocked || shouldUnlock,
-        progress: shouldUnlock ? (badgeMedal.criteriaValue as int) : newProgress,
+        progress: shouldUnlock ? (badgeMedal.criteriaValue as int) : calculatedProgress,
         earnedAt: shouldUnlock ? DateTime.now() : userBadge.earnedAt,
+        completedActivityIds: currentActivityIds,
       );
 
       await badgeRepository.updateUserBadge(updatedUserBadge);
@@ -286,6 +311,32 @@ class BadgeMedalViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = 'Error actualizando progreso: $e';
       notifyListeners();
+    }
+  }
+
+  /// Verificar badges de asistencia a eventos
+  Future<void> checkEventAttendanceBadges(String eventId) async {
+    try {
+      debugPrint("Checking event badges for event: $eventId");
+
+      // 1. Buscar badges relevantes
+      final eventBadges = allBadgeMedals.where((b) => b.criteriaType == 'events_attended');
+
+      // 2. Actualizar cada uno
+      for (final badge in eventBadges) {
+        // Pasamos el ID del evento. La lógica interna se encargará de:
+        // - Verificar si ya existe en la lista
+        // - Agregarlo si no
+        // - Recalcular el progreso (count de la lista)
+        await updateBadgeMedalProgress(
+          badge.id, 
+          0, // El progreso se recalcula internamente basado en la lista
+          newActivityIds: [eventId]
+        );
+      }
+      
+    } catch (e) {
+      debugPrint("Error checking event badges: $e");
     }
   }
 

@@ -9,6 +9,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../../util/analytics_service.dart';
+import 'package:app_flutter/pages/badges/viewModel/badges_view_model.dart';
+import 'package:app_flutter/util/badges_service.dart';
 
 class DetailEvent extends StatefulWidget {
   final Event event;
@@ -49,6 +51,19 @@ class _DetailEventState extends State<DetailEvent> {
       print(widget.event.id);
       print(widget.event.category);
       await _analytics.logCheckIn(widget.event.id, widget.event.category);
+      
+      // Verificar badges
+      if (mounted) {
+        // Opción rápida: crear instancia temporal (idealmente usar Provider)
+        final badgeViewModel = BadgeMedalViewModel(
+          userId: widget._auth.currentUser!.uid,
+          badgeRepository: BadgeRepository()
+        );
+        // Asegurar que tenemos los datos cargados antes de verificar
+        await badgeViewModel.loadAllBadgeMedals();
+        await badgeViewModel.checkEventAttendanceBadges(widget.event.id);
+      }
+
       _loadCheckIn();
   }
 
