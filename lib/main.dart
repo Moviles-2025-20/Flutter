@@ -65,6 +65,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProfileViewModel(),
         ),
+        ChangeNotifierProvider(create: (_) => QuizViewModel()),
         ChangeNotifierProvider(
           create: (_) => CommentViewModel(),
           

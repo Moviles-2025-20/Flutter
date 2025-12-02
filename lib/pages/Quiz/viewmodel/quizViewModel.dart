@@ -1,14 +1,17 @@
 import 'dart:isolate';
 import 'dart:math';
+import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 
 import '../../../util/analytics_service.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/local_DB_service.dart';
-import '../../../util/quizConstant.dart'; // ← NUEVO import
+import '../../../util/quizConstant.dart';
+import '../../profile/viewmodels/profile_viewmodel.dart';
 import '../model/optionModel.dart';
 import '../model/questionModel.dart';
 
@@ -20,6 +23,12 @@ class QuizViewModel extends ChangeNotifier {
   int _currentIndex = 0;
   bool _loading = true;
   bool _completed = false;
+
+  // Íconos para Home
+  List<IconData> _homeIcons = [Icons.psychology];
+  List<IconData> get homeIcons => _homeIcons;
+
+
 
   // NUEVO: Guardamos las respuestas del usuario para cada pregunta
   // Key = questionId, Value = la opción que seleccionó
@@ -258,7 +267,10 @@ class QuizViewModel extends ChangeNotifier {
   Future<void> saveResult({
     required String userId,
     required Map<String, dynamic> result,
+    required ProfileViewModel profileVM,
   }) async {
+    debugPrint('🎯 ============ INICIANDO saveResult ============');
+
     // Creamos el objeto UserQuizResult completo
     final userResult = UserQuizResult(
       userId: userId,
@@ -270,18 +282,70 @@ class QuizViewModel extends ChangeNotifier {
       resultType: result['type'].toString(),
     );
 
-    // GUARDADO MAESTRO: Usa el QuizStorageManager que maneja:
-    // 1. SharedPreferences (iconos/categorías para UI rápida)
-    // 2. LRU Cache (en memoria)
-    // 3. Archivo local (persistencia offline)
-    // 4. Firebase (sincronización en la nube, solo si hay internet)
-    await QuizStorageManager.saveResult(userResult);
+    debugPrint('📦 UserQuizResult creado con categorías: ${userResult.resultCategories}');
 
+    try {
+      // Paso 1: Guardar en todas las capas
+      await QuizStorageManager.saveResult(userResult);
+      debugPrint('✅ QuizStorageManager.saveResult completado');
 
+      // Paso 2: Esperar a que se complete la escritura
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Paso 3: Recargar iconos (sin notificar internamente)
+      await loadHomeIcons(userId);
+      debugPrint('✅ loadHomeIcons completado');
+      debugPrint('   _homeIcons ahora tiene: ${_homeIcons.length} iconos');
+
+      // Paso 4: NOTIFICAR para que Home se actualice
+      notifyListeners();
+      debugPrint('🔔 notifyListeners() llamado después de loadHomeIcons');
+
+      // Paso 5: Esperar un frame para que Home se actualice
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Paso 6: Actualizar ProfileViewModel si el context existe
+
+        await profileVM.refreshQuizCategories(userId);
+        debugPrint('✅ ProfileViewModel.refreshQuizCategories completado');
+      }
+
+    catch (e, stackTrace) {
+      debugPrint('❌ Error en saveResult: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+
+    debugPrint('🎯 ============ saveResult COMPLETO ============\n');
   }
+
+
+
+  Future<void> loadHomeIcons(String userId) async {
+    try {
+      debugPrint('🎨 loadHomeIcons iniciado para: $userId');
+
+      final icons = await QuizStorageManager.getHomeIcons(userId);
+
+      debugPrint('📦 Iconos obtenidos: ${icons.length} iconos');
+      debugPrint('   Iconos: ${icons.map((i) => i.toString()).join(", ")}');
+
+      _homeIcons = icons;
+
+      debugPrint('✅ _homeIcons actualizado en QuizViewModel');
+      debugPrint('   Nueva lista: ${_homeIcons.map((i) => i.codePoint).join(", ")}');
+
+      // 🔥 NO notificar aquí, se hará desde saveResult()
+
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error en loadHomeIcons: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+
 
   // NUEVO: Obtener el último resultado del usuario
   Future<UserQuizResult?> getLatestResult(String userId) async {
     return await QuizStorageManager.getLatestResult(userId);
   }
+
 }

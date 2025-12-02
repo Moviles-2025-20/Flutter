@@ -414,6 +414,21 @@ Future<void> _showResults(QuizViewModel vm) async {
     final result = await vm.calculateResult();
 
     AnalyticsService().logMoodQuizCompleted();
+    final profileVM = context.read<ProfileViewModel>();
+    // PASO 3: Guardamos en Firebase EN BACKGROUND
+    vm.saveResult(
+      userId: user.uid,
+      result: result, profileVM: profileVM,
+    ).then((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Results saved'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
 
     // Agregamos los scores al resultado para guardarlo completo
     final resultWithScores = {
@@ -434,20 +449,6 @@ Future<void> _showResults(QuizViewModel vm) async {
       ),
     );
 
-    // PASO 3: Guardamos en Firebase EN BACKGROUND
-    vm.saveResult(
-      userId: user.uid,
-      result: result,
-    ).then((_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Results saved'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     }).catchError((error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

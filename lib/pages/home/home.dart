@@ -95,10 +95,7 @@ class Home extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ChangeNotifierProvider(
-                                      create: (_) => QuizViewModel(),
-                                      child: const QuizScreen(),
-                                    ),
+                                    builder: (context) => const QuizScreen(), //  sin ChangeNotifierProvider
                                   ),
                                 );
                                 break;
