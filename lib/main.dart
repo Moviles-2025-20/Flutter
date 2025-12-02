@@ -46,11 +46,21 @@ void main() async {
   await RecommendationsStorageService().preloadCacheFromStorage();
 
   await RemoteConfigService().initialize();
-  runApp(const MyApp());
+
+  // Initialize NFC Service
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  NfcService().startSession(navigatorKey);
+
+  runApp(MyApp(navigatorKey: navigatorKey));
 }
 
+
+import 'package:app_flutter/services/nfc_service.dart';
+
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const MyApp({super.key, required this.navigatorKey});
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +89,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
+        navigatorKey: navigatorKey,
         navigatorObservers: [analytics.getAnalyticsObserver()],
         debugShowCheckedModeBanner: false,
         initialRoute: '/',

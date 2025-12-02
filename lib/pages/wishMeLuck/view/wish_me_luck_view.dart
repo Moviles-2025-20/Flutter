@@ -1,4 +1,5 @@
 import 'package:app_flutter/pages/wishMeLuck/viewmodel/wish_me_luck_view_model.dart';
+import 'package:app_flutter/services/nfc_service.dart';
 import 'package:app_flutter/widgets/MagicBall/event_card_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/events_magic_ball.dart';
 import 'package:app_flutter/widgets/MagicBall/header_section.dart';
@@ -66,9 +67,15 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
     );
 
     // Cargamos la variable asincrónica
-   WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<WishMeLuckViewModel>();
       viewModel.calculateDaysSinceLastWished();
+
+      // Check for autoTrigger argument
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args['autoTrigger'] == true) {
+        _onShakeDetected();
+      }
     });
 
     _initAccelerometer();
@@ -167,6 +174,26 @@ class _WishMeLuckContentState extends State<_WishMeLuckContent>
         backgroundColor: const Color(0xFF6389E2),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.nfc, color: Colors.white),
+            tooltip: 'Write NFC Tag',
+            onPressed: () {
+              // Import NfcService if not already imported or use fully qualified name if needed
+              // Assuming NfcService is available or we need to import it.
+              // Since we are in the view, we might need to import it.
+              // Let's check imports.
+              // We need to import 'package:app_flutter/services/nfc_service.dart';
+              // But I can't easily add import here without checking top of file.
+              // I'll assume I can add the import in a separate step or use a locator if available.
+              // For now, I'll just call it assuming I'll fix imports next.
+               NfcService().writeTag();
+               ScaffoldMessenger.of(context).showSnackBar(
+                 const SnackBar(content: Text('Approach an NFC tag to write')),
+               );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
