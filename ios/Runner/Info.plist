@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NFCReaderUsageDescription</key>
+	<string>We need NFC to unlock the Wish Me Luck feature.</string>
 </dict>
 </plist>
