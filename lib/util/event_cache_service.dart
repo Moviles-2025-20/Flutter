@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:app_flutter/pages/events/model/event.dart';
 import 'package:app_flutter/pages/events/model/event_filter.dart';
+import 'package:app_flutter/util/local_DB_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'package:quiver/collection.dart';
 
 class EventsCacheService {
@@ -16,15 +14,11 @@ class EventsCacheService {
   // LRU Cache for quick access (Firebase handles its own internal cache too)
   final LruMap<String, List<Event>> _cache = LruMap<String, List<Event>>(maximumSize: 10);
   
-  // SQLite Database for persistent offline storage
-  Database? _database;
-  static const String _dbName = 'events_cache.db';
-  static const String _tableName = 'cached_events';
-  
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> initialize() async {
-    await _initDatabase();
+    // Ensure DB is initialized
+    await LocalUserService().database;
     debugPrint('EventsCacheService initialized');
   }
 
@@ -48,27 +42,40 @@ class EventsCacheService {
     
     // 1. Check LRU cache first (fastest)
     if (_cache.containsKey(cacheKey)) {
-      debugPrint('LRU Cache HIT: $cacheKey');
-      return _cache[cacheKey]!;
+      final cached = _cache[cacheKey];
+      if (cached != null && cached.isNotEmpty) {
+        debugPrint('LRU Cache HIT: $cacheKey');
+        return cached;
+      }
+
+      debugPrint('LRU Cache EMPTY, continuing fetch...');
     }
 
-  
+    
     // 2. Check SQLite (persistent offline)
-    final sqliteCached = await _getFromSQLite(cacheKey);
+    final sqliteCached = await LocalUserService().getCachedEvents(cacheKey);
     if (sqliteCached != null && sqliteCached.isNotEmpty) {
       debugPrint('SQLite Cache HIT: $cacheKey (${sqliteCached.length} events)');
       _cache[cacheKey] = sqliteCached;
       return sqliteCached;
     }
 
+    // 3. Check General Events Fallback (when specific cache is missing)
+    final fallbackEvents = await LocalUserService().getAllEvents();
+    if (fallbackEvents.isNotEmpty) {
+      debugPrint('Fallback Events HIT: (${fallbackEvents.length} events)');
+      // We don't cache these in LRU under the specific key to avoid pollution, 
+      // or we could. For now, just returning them.
+      return fallbackEvents;
+    }
+
     
-    // 3. Fetch from Firestore (Firebase handles its own internal cache)
+    // 4. Fetch from Firestore (Firebase handles its own internal cache)
     debugPrint('Fetching from Firestore: $cacheKey');
     final events = await _fetchFromFirestore(filters);
-    
-    // 4. Store in both caches
+
     _cache[cacheKey] = events;
-    await _storeInSQLite(cacheKey, events);
+    await LocalUserService().cacheEvents(cacheKey, events);
     
     return events;
   }
@@ -131,6 +138,7 @@ class EventsCacheService {
       }
 
       debugPrint('Fetched ${events.length} events from Firestore');
+      await saveEvents(events, filters);
       return events;
     } catch (e, st) {
       debugPrint('Error fetching from Firestore: $e\n$st');
@@ -138,126 +146,19 @@ class EventsCacheService {
     }
   }
 
-
-  // ============== SQLITE DATABASE ==============
-
-  Future<void> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
-
-    _database = await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE $_tableName(
-            cache_key TEXT PRIMARY KEY,
-            events_json TEXT NOT NULL,
-            cached_at INTEGER NOT NULL
-          )
-        ''');
-        debugPrint('SQLite database created');
-      },
-    );
-  }
-
-  Future<List<Event>?> _getFromSQLite(String cacheKey) async {
-  if (_database == null) await _initDatabase();
-    try {
-      final results = await _database!.query(
-        _tableName,
-        where: 'cache_key = ?',
-        whereArgs: [cacheKey],
-      );
-
-      if (results.isEmpty) return null;
-
-      final eventsJson = results.first['events_json'] as String;
-      final List<dynamic> decoded = jsonDecode(eventsJson) as List<dynamic>;
-
-      final List<Event> events = [];
-      for (final item in decoded) {
-        if (item is Map<String, dynamic>) {
-          final id = item['id'] as String?;
-          final data = item['data'] as Map<String, dynamic>?;
-          if (id != null && data != null) {
-            events.add(Event.fromJson(id, data));
-          }
-        } else {
-          debugPrint('Unexpected item type in cached events: ${item.runtimeType}');
-        }
-      }
-
-      return events;
-    } catch (e, st) {
-      debugPrint('Error reading from SQLite: $e\n$st');
-      return null;
-    }
-  }
-
-
-  Future<void> _storeInSQLite(String cacheKey, List<Event> events) async {
-    if (_database == null) await _initDatabase();
-
-    try {
-      final payload = events.map((e) => {
-        'id': e.id,
-        'data': e.toJson(),
-      }).toList();
-
-      final eventsJson = jsonEncode(payload);
-
-      await _database!.insert(
-        _tableName,
-        {
-          'cache_key': cacheKey,
-          'events_json': eventsJson,
-          'cached_at': DateTime.now().millisecondsSinceEpoch,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-
-      debugPrint('Stored ${events.length} events in SQLite: $cacheKey');
-      await _cleanOldEntries();
-    } catch (e, st) {
-      debugPrint('Error writing to SQLite: $e\n$st');
-    }
-  }
-
   Future<void> saveEvents(List<Event> events, EventFilters filters) async {
-    final key = _getCacheKey(filters);
+    // final key = _getCacheKey(filters); // Not used for general fallback
 
     final random = Random();
     final shuffled = List<Event>.from(events)..shuffle(random);
     final selected = shuffled.take(5).toList();
 
-    _cache[key] = selected;
-    await _storeInSQLite(key, selected);
-
-  }
-
-
-
-  Future<void> _cleanOldEntries() async {
-    if (_database == null) return;
-    
-    try {
-      final weekAgo = DateTime.now()
-          .subtract(const Duration(days: 7))
-          .millisecondsSinceEpoch;
-      
-      final deleted = await _database!.delete(
-        _tableName,
-        where: 'cached_at < ?',
-        whereArgs: [weekAgo],
-      );
-      
-      if (deleted > 0) {
-        debugPrint('Cleaned $deleted old entries from SQLite');
-      }
-    } catch (e) {
-      debugPrint('Error cleaning SQLite: $e');
-    }
+    // Save to general events table
+    final cacheKey = _getCacheKey(filters);
+    _cache[cacheKey] = selected;
+    await LocalUserService().cacheEvents(cacheKey, selected);
+    await LocalUserService().insertEvents(selected);
+    debugPrint('Saved 5 events to general fallback table');
   }
 
   // ============== CACHE MANAGEMENT ==============
@@ -270,14 +171,7 @@ class EventsCacheService {
 
   /// Clear SQLite only (keep LRU)
   Future<void> clearPersistentCache() async {
-    if (_database == null) await _initDatabase();
-    
-    try {
-      await _database!.delete(_tableName);
-      debugPrint('SQLite cache cleared');
-    } catch (e) {
-      debugPrint('Error clearing SQLite: $e');
-    }
+    await LocalUserService().clearCacheTable();
   }
 
   /// Clear all caches
@@ -289,26 +183,13 @@ class EventsCacheService {
 
   /// Get cache statistics
   Future<Map<String, dynamic>> getCacheStats() async {
-    if (_database == null) await _initDatabase();
-    
-    try {
-      final result = await _database!.rawQuery(
-        'SELECT COUNT(*) as count FROM $_tableName'
-      );
-      final sqliteCount = Sqflite.firstIntValue(result) ?? 0;
-      
-      return {
+    // This would need to be added to LocalUserService if we want exact counts, 
+    // but for now we can skip or add a count method there.
+    // For simplicity, returning basic info.
+    return {
         'lruCacheSize': _cache.length,
         'lruMaxSize': _cache.maximumSize,
-        'sqliteEntriesCount': sqliteCount,
-      };
-    } catch (e) {
-      return {
-        'lruCacheSize': _cache.length,
-        'lruMaxSize': _cache.maximumSize,
-        'sqliteEntriesCount': 0,
-      };
-    }
+    };
   }
 
   /// Preload specific filter from SQLite to LRU
@@ -320,19 +201,10 @@ class EventsCacheService {
       return;
     }
 
-    final sqliteCached = await _getFromSQLite(cacheKey);
+    final sqliteCached = await LocalUserService().getCachedEvents(cacheKey);
     if (sqliteCached != null) {
       _cache[cacheKey] = sqliteCached;
       debugPrint('Preloaded $cacheKey to LRU cache');
-    }
-  }
-
-  /// Close database
-  Future<void> close() async {
-    if (_database != null) {
-      await _database!.close();
-      _database = null;
-      debugPrint('Database closed');
     }
   }
 }

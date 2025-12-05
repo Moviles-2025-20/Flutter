@@ -1,14 +1,19 @@
 import 'package:app_flutter/firebase_options.dart';
+import 'package:app_flutter/pages/Quiz/view/quizView.dart';
+import 'package:app_flutter/pages/Quiz/viewmodel/quizViewModel.dart';
 import 'package:app_flutter/pages/events/view/event_list_view.dart';
 import 'package:app_flutter/pages/login/viewmodels/auth_viewmodel.dart';
 import 'package:app_flutter/pages/login/viewmodels/register_viewmodel.dart';
+import 'package:app_flutter/pages/news/viewmodels/news_view_model.dart';
 import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:app_flutter/pages/wishMeLuck/view/wish_me_luck_view.dart';
 import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/util/auth_service.dart';
 import 'package:app_flutter/util/crash_analytics.dart';
 import 'package:app_flutter/util/google_api_key.dart';
 import 'package:app_flutter/pages/events/viewmodel/comment_viewmodel.dart';
+import 'package:app_flutter/util/local_DB_service.dart';
 import 'package:app_flutter/util/recommendation_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +36,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final localUserService = LocalUserService();
+  await localUserService.database;
 
   final crashTracker = CrashTracker();
   await crashTracker.initializeCrashlytics();
@@ -57,8 +65,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProfileViewModel(),
         ),
+        ChangeNotifierProvider(create: (_) => QuizViewModel()),
         ChangeNotifierProvider(
           create: (_) => CommentViewModel(),
+          
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NewsViewModel(),
         ),
       ],
       child: MaterialApp(
@@ -74,7 +87,6 @@ class MyApp extends StatelessWidget {
           '/start': (context) => const Start(),
           '/start/login': (context) => const Login(),
           '/home': (context) => const MainPage(),
-
           '/wishMeLuck': (context) => const WishMeLuckView(),
         },
         onGenerateRoute: (settings) {
@@ -114,12 +126,20 @@ class MainPageState extends State<MainPage> {
   final List<GlobalKey<NavigatorState>> _navigatorKeys =
   List.generate(4, (_) => GlobalKey<NavigatorState>());
 
+  final Set<int> _visitedIndices = {0};
+  Map<String, dynamic>? _pendingMapArgs;
+
   void selectTab(int index, {Map<String, dynamic>? arguments}) {
     if (_navigationStack.isNotEmpty && _navigationStack.last == index) return;
+
+    if (index == 1 && arguments != null) {
+      _pendingMapArgs = arguments;
+    }
 
     setState(() {
       _selectedIndex = index;
       _navigationStack.add(index);
+      _visitedIndices.add(index);
     });
 
     if (arguments != null && index == 1) {
@@ -129,7 +149,7 @@ class MainPageState extends State<MainPage> {
       );
     }
 
-    print('Navigation stack: $_navigationStack');
+    debugPrint('Navigation stack: $_navigationStack');
   }
 
   void _onItemTapped(int index, {Map<String, dynamic>? arguments}) {
@@ -138,6 +158,7 @@ class MainPageState extends State<MainPage> {
     setState(() {
       _selectedIndex = index;
       _navigationStack.add(index);
+      _visitedIndices.add(index); 
     });
 
     if (arguments != null && index == 1) {
@@ -147,7 +168,7 @@ class MainPageState extends State<MainPage> {
       );
     }
 
-    print('Navigation stack: $_navigationStack');
+    debugPrint('Navigation stack: $_navigationStack');
   }
 
   Future<bool> _onWillPop() async {
@@ -165,7 +186,7 @@ class MainPageState extends State<MainPage> {
         _navigationStack.removeLast();
         _selectedIndex = _navigationStack.last;
       });
-      print('Back to tab: $_selectedIndex');
+      debugPrint('Back to tab: $_selectedIndex');
       return false;
     }
 
@@ -200,38 +221,54 @@ class MainPageState extends State<MainPage> {
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            Navigator(
-              key: _navigatorKeys[0],
-              onGenerateRoute: (settings) {
-                return MaterialPageRoute(builder: (_) => Home());
-              },
-            ),
-            Navigator(
-              key: _navigatorKeys[1],
-              onGenerateRoute: (settings) {
-                final args = (settings.arguments is Map)
-                    ? Map<String, dynamic>.from(settings.arguments as Map)
-                    : null;
-                final startWithMap =
-                    args?['startWithMapView'] as bool? ?? false;
-                return MaterialPageRoute(
-                  builder: (_) =>
-                      EventsMapListView(startWithMapView: startWithMap),
-                );
-              },
-            ),
-            Navigator(
-              key: _navigatorKeys[2],
-              onGenerateRoute: (settings) {
-                return MaterialPageRoute(builder: (_) => const WishMeLuckView());
-              },
-            ),
-            Navigator(
-              key: _navigatorKeys[3],
-              onGenerateRoute: (settings) {
-                return MaterialPageRoute(builder: (_) => const ProfilePage());
-              },
-            ),
+            _visitedIndices.contains(0) 
+                ? Navigator(
+                    key: _navigatorKeys[0],
+                    onGenerateRoute: (settings) {
+                      return MaterialPageRoute(builder: (_) => Home());
+                    },
+                  )
+                : const SizedBox.shrink(),
+            _visitedIndices.contains(1)
+                ? Navigator(
+                    key: _navigatorKeys[1],
+                    onGenerateRoute: (settings) {
+                      // Optimization: Check for pending args or settings.arguments
+                      final args = _pendingMapArgs ?? 
+                          ((settings.arguments is Map)
+                              ? Map<String, dynamic>.from(settings.arguments as Map)
+                              : null);
+                              
+                      // Clear pending args after use to avoid reusing them unexpectedly
+                      if (_pendingMapArgs != null) {
+                         _pendingMapArgs = null;
+                      }
+                      final startWithMap =
+                          args?['startWithMapView'] as bool? ?? false;
+                          
+                      return MaterialPageRoute(
+                        builder: (_) =>
+                            EventsMapListView(startWithMapView: startWithMap),
+                      );
+                    },
+                  )
+                : const SizedBox.shrink(),
+            _visitedIndices.contains(2)
+                ? Navigator(
+                    key: _navigatorKeys[2],
+                    onGenerateRoute: (settings) {
+                      return MaterialPageRoute(builder: (_) => const WishMeLuckView());
+                    },
+                  )
+                : const SizedBox.shrink(),
+            _visitedIndices.contains(3)
+                ? Navigator(
+                    key: _navigatorKeys[3],
+                    onGenerateRoute: (settings) {
+                      return MaterialPageRoute(builder: (_) => const ProfilePage());
+                    },
+                  )
+                : const SizedBox.shrink(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:app_flutter/main.dart';
 import 'package:app_flutter/pages/FreeTime/view/free_time_view.dart';
+import 'package:app_flutter/pages/Quiz/view/quizView.dart';
 import 'package:app_flutter/pages/weekly/viewmodel/weekly_challenge_view_model.dart';
 import 'package:app_flutter/util/analytics_service.dart';
 import 'package:app_flutter/widgets/customHeader.dart';
@@ -13,6 +14,8 @@ import 'package:app_flutter/pages/profile/viewmodels/profile_viewmodel.dart';
 import 'package:app_flutter/pages/weekly/view/weekly_challenge_view.dart';
 
 import '../../../widgets/recommendation_section.dart';
+import '../Quiz/viewmodel/quizViewModel.dart';
+
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -88,9 +91,15 @@ class Home extends StatelessWidget {
                                 }
                                 break;
 
-                              case CardType.wishMeLuck:
-                                mainPageState?.selectTab(2);
+                              case CardType.MoodQuiz:
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const QuizScreen(), //  sin ChangeNotifierProvider
+                                  ),
+                                );
                                 break;
+
                               case CardType.map:
                                 analytics.logMapUsed(user.uid);
                                 mainPageState?.selectTab(1, arguments: {'startWithMapView': true});
@@ -103,7 +112,10 @@ class Home extends StatelessWidget {
 
 
                         // Carga dinámica de recomendaciones con FutureBuilder
-                        RecommendationsSection(),
+                        // Optimización
+                        RepaintBoundary(
+                          child: RecommendationsSection(),
+                        ),
 
 
                         const SizedBox(height: 30),

@@ -1,5 +1,6 @@
 import 'package:app_flutter/pages/events/viewmodel/event_list_view_model.dart';
 import 'package:app_flutter/pages/notification.dart';
+import 'package:app_flutter/pages/news/views/news.dart';
 import 'package:app_flutter/widgets/list_events/event_list.dart';
 import 'package:app_flutter/widgets/list_events/event_map.dart';
 import 'package:app_flutter/widgets/list_events/filters_widgets.dart';
@@ -42,12 +43,12 @@ class EventsMapListContent extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            icon: const Icon(Icons.description, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NotificationsPage(),
+                  builder: (context) => const NewsView(),
                 ),
               );
             },
@@ -57,13 +58,13 @@ class EventsMapListContent extends StatelessWidget {
       ),
       
 
-      body: Column(
+      body: 
+        RepaintBoundary(
+        child: Column(
         children: [
            // Barra de búsqueda
           const SizedBox(height: 8),
-
           SearchBar(viewModel: viewModel),
-
           const SizedBox(height: 8),
 
           Padding(
@@ -119,7 +120,7 @@ class EventsMapListContent extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _showFiltersBottomSheet(BuildContext context, EventsViewModel viewModel) {

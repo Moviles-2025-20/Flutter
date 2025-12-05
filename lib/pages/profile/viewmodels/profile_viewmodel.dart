@@ -10,17 +10,24 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../util/firebase_service.dart';
 import '../../../util/local_DB_service.dart';
+import '../../../util/quizConstant.dart';
 import '../models/user_model.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class ProfileViewModel extends ChangeNotifier {
+
   final FirebaseFirestore _firestore = FirebaseService.firestore;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final localUserService = LocalUserService();
 
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
+
+  List<String> _quizCategories = [];
+
+  List<String> get quizCategories => _quizCategories;
+
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -48,6 +55,8 @@ class ProfileViewModel extends ChangeNotifier {
           throw TimeoutException("Timeout al cargar datos del usuario");
         }),
       ]);
+      await loadQuizCategories();
+
     } catch (e) {
       _error = "There is no network or local data save for this user";
       debugPrint("Error loading user data: $e");
@@ -602,6 +611,40 @@ class ProfileViewModel extends ChangeNotifier {
       return "Ambivert";
     }
   }
+
+  Future<void> loadQuizCategories() async {
+    if (_currentUser == null) return;
+
+    _quizCategories =
+    await QuizStorageManager.getCategories(_currentUser!.uid);
+
+    notifyListeners();
+  }
+
+
+  Future<void> refreshQuizCategories(String userId) async {
+    debugPrint('🔄 ============ refreshQuizCategories INICIADO ============');
+    debugPrint('   userId: $userId');
+
+    // Esperar un momento para que SharedPreferences termine de escribir
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    final categories = await QuizStorageManager.getCategories(userId);
+
+    debugPrint('📦 Categorías obtenidas: $categories');
+
+    _quizCategories = categories;
+
+    debugPrint('✅ _quizCategories actualizado: $_quizCategories');
+    debugPrint('🔄 ============ refreshQuizCategories COMPLETO ============\n');
+
+    notifyListeners(); // 🔔 Fuerza reconstrucción de ProfilePage
+  }
+
+
+
+
+
 
   /// Limpiar error
   void clearError() {

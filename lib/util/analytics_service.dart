@@ -178,6 +178,25 @@ class AnalyticsService {
     );
   }
 
+  // Quiz analytics
+  Future<void> logMoodQuizOpened() async {
+    await _analytics.logEvent(
+      name: 'mood_quiz_opened',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
+  Future<void> logMoodQuizCompleted() async {
+    await _analytics.logEvent(
+      name: 'mood_quiz_completed',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
+
   void activarFirebase() async{
     await _analytics.setAnalyticsCollectionEnabled(true);
   }
