@@ -1,5 +1,6 @@
 import 'package:app_flutter/pages/badges/model/badge.dart';
 import 'package:app_flutter/pages/events/model/event.dart';
+import 'package:app_flutter/pages/news/models/news.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:convert';
@@ -128,7 +129,19 @@ class LocalUserService {
     )
   ''');
     print("✓ Tabla 'quiz_questions' creada");
-    
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS news (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        description TEXT,
+        image TEXT,
+        ratings TEXT,         -- JSON list of userIds
+        created_at TEXT
+      )
+    ''');
+    print("✓ Tabla 'news' creada");
+
     print("✓ Todas las tablas creadas correctamente");
   } catch (e) {
     print("✗ Error creando tablas: $e");
@@ -513,4 +526,44 @@ class LocalUserService {
     }).toList();
   }
 
+
+  // save news 
+  Future<void> saveNews(List<News> list) async {
+  final db = await database;
+
+  await db.transaction((txn) async {
+    await txn.delete('news');
+
+    for (final n in list) {
+      await txn.insert(
+        'news',
+        {
+          'id': n.id,
+          'title': n.eventName,
+          'description': n.description,
+          'image': n.photoUrl,
+          'ratings': jsonEncode(n.ratings), 
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  });
+}
+
+// get all news
+Future<List<News>> getAllNews() async {
+  final db = await database;
+  final results = await db.query('news');
+
+  return results.map((row) {
+    return News(
+      id: row['id'] as String,
+      eventName: row['title'] as String,
+      description: row['description'] as String,
+      photoUrl: row['image'] as String,
+      ratings: List<String>.from(jsonDecode(row['ratings'] as String)), eventId: row['id'] as String,
+    );
+  }).toList();
+
+}
 }

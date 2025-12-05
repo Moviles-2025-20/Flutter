@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import '../models/news.dart';
 import '../../../util/news_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../util/local_DB_service.dart';
 
 class NewsViewModel extends ChangeNotifier {
   final NewsService _service = NewsService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final LocalUserService _localDb = LocalUserService();
+
 
   List<News> news = [];
   bool isLoading = false;
@@ -13,26 +16,35 @@ class NewsViewModel extends ChangeNotifier {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
-  Future<void> loadNews() async {
-    isLoading = true;
-    error = null;
-    notifyListeners();
+Future<void> loadNews() async {
+  isLoading = true;
+  error = null;
+  notifyListeners();
 
-    try {
-      final result = await _service.loadNews();
+  try {
+    final result = await _service.loadNews();
 
-      if (result.isEmpty) {
-        error = "No news available. Check your connection.";
-      }
-
+    if (result.isNotEmpty) {
       news = result;
-    } catch (e) {
+      await _localDb.saveNews(result);
+    } else {
+      news = await _localDb.getAllNews();
+      if (news.isEmpty) {
+        error = "No news available.";
+      }
+    }
+  } catch (e) {
+    news = await _localDb.getAllNews();
+
+    if (news.isEmpty) {
       error = "Error loading news: $e";
     }
-
-    isLoading = false;
-    notifyListeners();
   }
+
+  isLoading = false;
+  notifyListeners();
+}
+
 
 Future<void> toggleLike(String id) async {
   final userId = currentUserId;
